@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <TextView
+        android:id="@+id/tv_sale_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Sale #1234"
+        android:textColor="@color/textPrimary"
+        android:textSize="16sp"
+        android:textStyle="bold"/>
+
+    <TextView
+        android:id="@+id/tv_sale_date"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Feb 8, 2025"
+        android:textColor="@color/textPrimary"
+        android:textSize="14sp"/>
+</LinearLayout>

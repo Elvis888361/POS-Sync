@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="cbMethod" type="id" />
+    <item name="tvMethodName" type="id" />
+    <item name="etAmount" type="id" />
+    <item name="tvTotalPaid" type="id" />
+    <item name="paymentMethodsContainer" type="id" />
+    <item name="btnConfirmPayment" type="id" />
+    <item name="tvInvoiceTotal" type="id" />
+</resources>

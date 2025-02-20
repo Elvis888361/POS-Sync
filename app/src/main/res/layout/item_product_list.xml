@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardBackgroundColor="@color/cardBackground"
+    app:cardCornerRadius="8dp"
+    app:strokeColor="@color/primary"
+    app:strokeWidth="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:gravity="center_vertical">
+
+        <!-- Product Image -->
+<!--        <ImageView-->
+<!--            android:id="@+id/item_image"-->
+<!--            android:layout_width="60dp"-->
+<!--            android:layout_height="60dp"-->
+<!--            android:scaleType="centerCrop"-->
+<!--            android:src="@drawable/placeholder_product"-->
+<!--            android:contentDescription="Product Image"-->
+<!--            android:layout_marginEnd="16dp" />-->
+
+        <!-- Product Details -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="horizontal">
+
+            <!-- Product Name -->
+            <TextView
+                android:id="@+id/item_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Product Name"
+                android:textColor="@color/textPrimary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <!-- Product Quantity -->
+            <TextView
+                android:id="@+id/item_qty"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Qty: 10"
+                android:layout_marginLeft="20dp"
+                android:textColor="@color/textSecondary"
+                android:textSize="14sp"
+                android:layout_marginTop="4dp" />
+
+            <!-- Product UOM -->
+            <TextView
+                android:id="@+id/item_uom"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="UOM: Each"
+                android:textColor="@color/textSecondary"
+                android:layout_marginLeft="10dp"
+                android:textSize="14sp"
+                android:layout_marginTop="4dp" />
+
+            <!-- Product Price -->
+            <TextView
+                android:id="@+id/item_price"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:text="$10.00"
+                android:textColor="@color/textSecondary"
+                android:textSize="14sp"
+                android:layout_marginTop="4dp" />
+        </LinearLayout>
+
+<!--        &lt;!&ndash; Add to Cart Button &ndash;&gt;-->
+<!--        <Button-->
+<!--            android:id="@+id/add_to_cart"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:text="Add"-->
+<!--            android:backgroundTint="@color/primary"-->
+<!--            android:textColor="@android:color/white"-->
+<!--            android:paddingHorizontal="16dp" />-->
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

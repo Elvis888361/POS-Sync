@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="2dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Sale ID -->
+        <TextView
+            android:id="@+id/sale_id"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sale #12345"
+            android:textColor="@color/textPrimary"
+            android:textSize="16sp"
+            android:textStyle="bold"/>
+
+        <!-- Sale Date -->
+        <TextView
+            android:id="@+id/sale_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="2023-10-15"
+            android:textColor="@color/textSecondary"
+            android:textSize="14sp"
+            android:layout_marginTop="4dp"/>
+
+        <!-- Sale Amount -->
+        <TextView
+            android:id="@+id/sale_amount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="$450.00"
+            android:textColor="@color/textPrimary"
+            android:textSize="16sp"
+            android:layout_marginTop="8dp"/>
+
+        <!-- Customer Name -->
+        <TextView
+            android:id="@+id/customer_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Customer: John Doe"
+            android:textColor="@color/textSecondary"
+            android:textSize="14sp"
+            android:layout_marginTop="4dp"/>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

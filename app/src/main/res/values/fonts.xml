@@ -1,0 +1,5 @@
+<resources>
+    <string name="font_regular">sans-serif</string>
+    <string name="font_medium">sans-serif-medium</string>
+    <string name="font_bold">sans-serif-bold</string>
+</resources>

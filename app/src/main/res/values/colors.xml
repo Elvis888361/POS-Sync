@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="primary">#6200EE</color> <!-- Material Purple -->
+    <color name="primaryDark">#3700B3</color>
+    <color name="primaryLight">#BB86FC</color>
+    <color name="primary_dark">#3700B3</color>
+    <color name="red">#FF0000</color>
+    <color name="primaryColor">#6200EE</color>
+    <color name="bottomNavIcon">#607D8B</color>
+    <color name="bottomNavText">#455A64</color>
+    <!-- Background Colors -->
+    <color name="background">#F5F5F5</color> <!-- Light Gray -->
+    <color name="cardBackground">#FFFFFF</color> <!-- White -->
+
+    <!-- Text Colors -->
+    <color name="textPrimary">#000000</color> <!-- Black -->
+    <color name="textSecondary">#757575</color> <!-- Gray -->
+    <color name="purple">#8692f7</color>
+    <!-- Status Colors -->
+    <color name="success">#4CAF50</color> <!-- Green -->
+    <color name="error">#F44336</color> <!-- Red -->
+    <color name="backgroundColor">#FFFFFF</color>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="lavender">#8692f7</color>
+    <color name="colorPrimary">#2196F3</color>
+    <color name="colorPrimaryDark">#1976D2</color>
+    <color name="colorAccent">#FF4081</color>
+
+    <!-- Text Colors -->
+    <color name="primaryText">#000000</color>
+    <color name="secondaryText">#757575</color>
+
+    <!-- Stroke Color for Cards -->
+    <color name="cardStroke">#E0E0E0</color>
+
+    <!-- Loading Indicator Color -->
+    <color name="loadingIndicator">#6200EE</color>
+    <!-- Accent Colors -->
+    <color name="accent">#03DAC5</color> <!-- Teal -->
+</resources>
