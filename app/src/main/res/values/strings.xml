@@ -45,4 +45,5 @@
     <string name="erpnext_urls">ERPNext URL</string>
     <string name="erpnext_api_key">ERPNext API Key</string>
     <string name="enable_auto_sync">Enable Auto-Sync</string>
+    <string name="date_to">Date To</string>
 </resources>

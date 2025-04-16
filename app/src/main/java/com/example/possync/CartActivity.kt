@@ -69,6 +69,7 @@ class CartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
         val draftInvoiceId = intent.getStringExtra("DRAFT_INVOICE_ID")
         if (draftInvoiceId != null) {
             currentDraftInvoiceId = draftInvoiceId
+            Log.e("CartActivity",draftInvoiceId)
             loadDraftInvoice(draftInvoiceId)
         }
 
@@ -127,7 +128,7 @@ class CartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
                 return@setOnClickListener
             }
 
-            proceedToCheckout(customer, cartItems, customFields)
+            proceedToCheckout(customer, cartItems, customFields,currentDraftInvoiceId)
         }
     }
     private fun showAddCustomFieldDialog() {
@@ -173,7 +174,7 @@ class CartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
     }
 
     private fun saveCustomField(fieldName: String, fieldValue: String) {
-        val sharedPreferences = getSharedPreferences("CustomFields", Context.MODE_PRIVATE)
+        val sharedPreferences = getSharedPreferences("CustomFields", MODE_PRIVATE)
         val editor = sharedPreferences.edit()
         // Save the field name and its default value
         editor.putString(fieldName, fieldValue)
@@ -219,7 +220,7 @@ class CartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
         }
 
         // Construct the URL to fetch a single Sales Invoice record by its ID.
-        val prefs = getSharedPreferences("session_cookie", Context.MODE_PRIVATE)
+        val prefs = getSharedPreferences("session_cookie", MODE_PRIVATE)
         val invoiceType = prefs.getString("invoice_type", "")
         val url = if (invoiceType == "sales_invoice") {
             "https://$erpnextUrl/api/resource/Sales%20Invoice/${URLEncoder.encode(invoiceId, "UTF-8")}"
@@ -596,7 +597,12 @@ class CartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
         })
     }
 
-    private fun proceedToCheckout(customer: String, cartItems: List<CartItem>, customFields: List<CustomField>) {
+    private fun proceedToCheckout(
+        customer: String,
+        cartItems: List<CartItem>,
+        customFields: List<CustomField>,
+        currentDraftInvoiceId: String?
+    ) {
         val sharedPreferences = getSharedPreferences("ERPNextPreferences", MODE_PRIVATE)
         val sessionCookie = sharedPreferences.getString("sessionCookie", null)
         val erpnextUrl = sharedPreferences.getString("ERPNextUrl", null)
@@ -714,10 +720,13 @@ class CartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
                 invoiceData.put("payments", paymentsChildArray)
                 // If we are editing an existing draft invoice, update it.
                 if (currentDraftInvoiceId != null) {
-                    updateSalesInvoice(invoiceData, sessionCookie, erpnextUrl, currentDraftInvoiceId!!)
+                    Log.e("CartActivity",currentDraftInvoiceId)
+                }
+                if (currentDraftInvoiceId != null) {
+                    updateSalesInvoice(invoiceData, sessionCookie, erpnextUrl, currentDraftInvoiceId,customFields)
                 } else {
                     // In another Activity or Fragment
-                    val prefs = getSharedPreferences("session_cookie", Context.MODE_PRIVATE)
+                    val prefs = getSharedPreferences("session_cookie", MODE_PRIVATE)
                     val invoiceType = prefs.getString("invoice_type", "") // "sales_invoice" is the default value
                     if (invoiceType != null) {
                         createSalesInvoice(invoiceData, sessionCookie, erpnextUrl, invoiceType, customFields)
@@ -773,6 +782,7 @@ class CartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
         invoiceType: String,
         customFields: List<CustomField>
     ) {
+        var set_true=0
         if (invoiceType == "sales_invoice") {
             for (customField in customFields) {
                 Log.d("Checkout", "Field Name: ${customField.fieldName} - Value: ${customField.fieldValue}")
@@ -782,7 +792,13 @@ class CartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
                 createCustomErpnextField(cfield,cvalie,clabel,invoiceType)
             }
             Log.d("SalesInvoice", "Request Payload: ${invoiceData.toString()}")
-            val url = "https://$erpnextUrl/api/resource/Sales Invoice"
+            val sharedPreferences = getSharedPreferences("session_cookie", Context.MODE_PRIVATE)
+            val invoiceType = sharedPreferences.getString("invoice_type","")
+            val url = if (invoiceType == "sales_invoice") {
+                "https://$erpnextUrl/api/resource/Sales Invoice"
+            } else {
+                "https://$erpnextUrl/api/resource/POS Invoice"
+            }
             val requestBody = invoiceData.toString().toRequestBody("application/json".toMediaTypeOrNull())
             val request = Request.Builder()
                 .url(url)
@@ -813,14 +829,17 @@ class CartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
                     if (!response.isSuccessful) {
                         // If ERPNext indicates a mandatory field error, handle it.
                         if (responseBody != null && responseBody.contains("MandatoryError")) {
-                            handleInvoiceMandatoryError(
-                                responseBody,
-                                invoiceData,
-                                invoiceType,
-                                sessionCookie,
-                                erpnextUrl,
-                                customFields
-                            )
+                            if (invoiceType != null) {
+                                handleInvoiceMandatoryError(
+                                    responseBody,
+                                    invoiceData,
+                                    invoiceType,
+                                    sessionCookie,
+                                    erpnextUrl,
+                                    customFields,
+                                    set_true
+                                )
+                            }
                         } else {
                             runOnUiThread {
                                 Toast.makeText(
@@ -896,7 +915,11 @@ class CartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
                                 invoiceNumber = invoiceName,
                                 status = dataObject.optString("status", ""),
                                 docStatus = dataObject.optInt("docstatus", 0),
-                                companyaddressdisplay = dataObject.optString("company_address_display", "")
+                                companyaddressdisplay = dataObject.optString(
+                                    "company_address_display",
+                                    ""
+                                ),
+                                modified = dataObject.optString("modified","")
                             )
 
                             // Navigate to PaymentActivity with the created invoice.
@@ -934,7 +957,13 @@ class CartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
                 createCustomErpnextField(cfield,cvalie,clabel,invoiceType)
             }
             Log.d("POSInvoice", "Request Payload: ${invoiceData.toString()}")
-            val url = "https://$erpnextUrl/api/resource/POS Invoice"
+            val sharedPreferences = getSharedPreferences("session_cookie", Context.MODE_PRIVATE)
+            val invoiceType = sharedPreferences.getString("invoice_type","")
+            val url = if (invoiceType == "sales_invoice") {
+                "https://$erpnextUrl/api/resource/Sales Invoice"
+            } else {
+                "https://$erpnextUrl/api/resource/POS Invoice"
+            }
             val requestBody = invoiceData.toString().toRequestBody("application/json".toMediaTypeOrNull())
             val request = Request.Builder()
                 .url(url)
@@ -964,14 +993,17 @@ class CartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
                     Log.d("POSInvoice", "Full Response: $responseBody")
                     if (!response.isSuccessful) {
                         if (responseBody != null && responseBody.contains("MandatoryError")) {
-                            handleInvoiceMandatoryError(
-                                responseBody,
-                                invoiceData,
-                                invoiceType,
-                                sessionCookie,
-                                erpnextUrl,
-                                customFields
-                            )
+                            if (invoiceType != null) {
+                                handleInvoiceMandatoryError(
+                                    responseBody,
+                                    invoiceData,
+                                    invoiceType,
+                                    sessionCookie,
+                                    erpnextUrl,
+                                    customFields,
+                                    set_true
+                                )
+                            }
                         } else {
                             runOnUiThread {
                                 Toast.makeText(
@@ -1044,7 +1076,11 @@ class CartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
                                 invoiceNumber = invoiceName,
                                 status = dataObject.optString("status", ""),
                                 docStatus = dataObject.optInt("docstatus", 0),
-                                companyaddressdisplay = dataObject.optString("company_address_display", "")
+                                companyaddressdisplay = dataObject.optString(
+                                    "company_address_display",
+                                    ""
+                                ),
+                                modified = dataObject.optString("modified","")
                             )
 
                             val intent = Intent(this@CartActivity, PaymentActivity::class.java).apply {
@@ -1081,7 +1117,8 @@ class CartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
         invoiceType: String,
         sessionCookie: String,
         erpnextUrl: String,
-        customFields: List<CustomField>
+        customFields: List<CustomField>,
+        set_true:Int
     ) {
         try {
             val errorJson = JSONObject(responseBody)
@@ -1136,7 +1173,8 @@ class CartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
                             invoiceType,
                             sessionCookie,
                             erpnextUrl,
-                            customFields
+                            customFields,
+                            set_true
                         )
                     }
                 }
@@ -1249,7 +1287,8 @@ class CartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
         invoiceType: String,
         sessionCookie: String,
         erpnextUrl: String,
-        customFields: List<CustomField>
+        customFields: List<CustomField>,
+        set_true:Int
     ) {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Additional Information Required")
@@ -1340,7 +1379,14 @@ class CartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
             }
             Log.d("InvoiceUpdate", "Updated invoice payload: $invoiceData")
             // Resubmit the invoice with the updated data
-            createSalesInvoice(invoiceData, sessionCookie, erpnextUrl, invoiceType, customFields)
+            if (set_true==1){
+                currentDraftInvoiceId?.let {
+                    updateSalesInvoice(invoiceData, sessionCookie, erpnextUrl,
+                        it,customFields)
+                }
+            }else{
+                createSalesInvoice(invoiceData, sessionCookie, erpnextUrl, invoiceType, customFields)
+            }
         }
         builder.setNegativeButton("Cancel") { dialog, which -> dialog.dismiss() }
         builder.show()
@@ -1426,10 +1472,19 @@ class CartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
         invoiceData: JSONObject,
         sessionCookie: String,
         erpnextUrl: String,
-        invoiceId: String
+        currentDraftInvoiceId: String,
+        customFields:List<CustomField>
     ) {
         Log.d("SalesInvoice", "Update Request Payload: ${invoiceData.toString()}")
-        val url = "https://$erpnextUrl/api/resource/Sales%20Invoice/${URLEncoder.encode(invoiceId, "UTF-8")}"
+
+        val sharedPreferences = getSharedPreferences("session_cookie", Context.MODE_PRIVATE)
+        val set_true=1
+        val invoiceType = sharedPreferences.getString("invoice_type", "")
+        val url = if (invoiceType == "sales_invoice") {
+            "https://$erpnextUrl/api/resource/Sales%20Invoice/${URLEncoder.encode(currentDraftInvoiceId, "UTF-8")}"
+        } else {
+            "https://$erpnextUrl/api/resource/POS%20Invoice/${URLEncoder.encode(currentDraftInvoiceId, "UTF-8")}"
+        }
         val requestBody = invoiceData.toString().toRequestBody("application/json".toMediaTypeOrNull())
         val request = Request.Builder()
             .url(url)
@@ -1441,7 +1496,11 @@ class CartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
         getUnsafeOkHttpClient().newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 runOnUiThread {
-                    Toast.makeText(this@CartActivity, "Failed to update sales invoice: ${e.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        this@CartActivity,
+                        "Failed to update sales invoice: ${e.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
                     AlertDialog.Builder(this@CartActivity)
                         .setTitle("Error")
                         .setMessage("Failed to update sales invoice: ${e.message}")
@@ -1454,13 +1513,32 @@ class CartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
                 val responseBody = response.body?.string()
                 Log.d("SalesInvoice", "Update Response: $responseBody")
                 if (!response.isSuccessful) {
-                    runOnUiThread {
-                        Toast.makeText(this@CartActivity, "Error updating sales invoice: ${response.message}", Toast.LENGTH_LONG).show()
-                        AlertDialog.Builder(this@CartActivity)
-                            .setTitle("Error")
-                            .setMessage("Error updating sales invoice: ${response.message}")
-                            .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
-                            .show()
+                    // If ERPNext indicates a mandatory field error, handle it.
+                    if (responseBody != null && responseBody.contains("MandatoryError")) {
+                        if (invoiceType != null) {
+                            handleInvoiceMandatoryError(
+                                responseBody,
+                                invoiceData,
+                                invoiceType,
+                                sessionCookie,
+                                erpnextUrl,
+                                customFields,  // Ensure customFields is defined or passed appropriately
+                                set_true
+                            )
+                        }
+                    } else {
+                        runOnUiThread {
+                            Toast.makeText(
+                                this@CartActivity,
+                                "Error updating sales invoice: ${response.message}",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            AlertDialog.Builder(this@CartActivity)
+                                .setTitle("Error")
+                                .setMessage("Error updating sales invoice: ${response.message}")
+                                .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
+                                .show()
+                        }
                     }
                 } else {
                     try {
@@ -1476,6 +1554,7 @@ class CartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
                         val grandTotal = dataObject.optDouble("grand_total", 0.0)
                         val currency = dataObject.optString("currency", "USD")
 
+                        // Process items
                         val itemsArray = dataObject.optJSONArray("items")
                         val itemsList = mutableListOf<InvoiceItem>()
                         if (itemsArray != null) {
@@ -1488,12 +1567,16 @@ class CartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
                             }
                         }
 
+                        // Process payments
                         val paymentsArray = dataObject.optJSONArray("payments")
                         val paymentsList = mutableListOf<InvoicePayment>()
                         if (paymentsArray != null) {
                             for (i in 0 until paymentsArray.length()) {
                                 val paymentJson = paymentsArray.getJSONObject(i)
-                                val mode = paymentJson.optString("mode_of_payment", paymentJson.optString("mode", ""))
+                                val mode = paymentJson.optString(
+                                    "mode_of_payment",
+                                    paymentJson.optString("mode", "")
+                                )
                                 val payAmount = paymentJson.optDouble("amount", 0.0)
                                 paymentsList.add(InvoicePayment(mode_of_payment = mode, amount = payAmount))
                             }
@@ -1510,14 +1593,15 @@ class CartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
                             date = date,
                             grandTotal = grandTotal,
                             currency = currency,
-                            company =dataObject.optString("company", ""),
+                            company = dataObject.optString("company", ""),
                             companyaddress = dataObject.optString("company_address", ""),
                             customername = dataObject.optString("customer_name", ""),
                             companytaxid = dataObject.optString("company_tax_id", ""),
                             invoiceNumber = invoiceName,
                             status = dataObject.optString("status", ""),
                             docStatus = dataObject.optInt("docstatus", 0),
-                            companyaddressdisplay = dataObject.optString("company_address_display", "")
+                            companyaddressdisplay = dataObject.optString("company_address_display", ""),
+                            modified = dataObject.optString("modified", "")
                         )
 
                         runOnUiThread {
@@ -1531,7 +1615,11 @@ class CartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
 
                     } catch (e: JSONException) {
                         runOnUiThread {
-                            Toast.makeText(this@CartActivity, "Failed to process updated invoice", Toast.LENGTH_LONG).show()
+                            Toast.makeText(
+                                this@CartActivity,
+                                "Failed to process updated invoice",
+                                Toast.LENGTH_LONG
+                            ).show()
                             AlertDialog.Builder(this@CartActivity)
                                 .setTitle("Error")
                                 .setMessage("Failed to process updated invoice")

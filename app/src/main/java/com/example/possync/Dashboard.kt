@@ -1,5 +1,6 @@
 package com.example.possync
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.os.Build
@@ -17,19 +18,26 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import okhttp3.*
+import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.IOException
+import java.net.URLEncoder
+import java.security.SecureRandom
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 import java.security.cert.X509Certificate
+import java.time.LocalDate
 
 class Dashboard : AppCompatActivity() {
     // Example ViewModel (adjust or remove if you do not use one)
     private lateinit var viewModel: POSViewModel
     private val sharedPreferencesKey = "ERPNextPreferences"
     private val sessionCookieKey = "sessionCookie"
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var adapter: SalesHistoryAdapter
+    private val salesInvoices = mutableListOf<SalesInvoice>()
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,8 +57,18 @@ class Dashboard : AppCompatActivity() {
         }
 
         // (Optional) Setup a sales history RecyclerView
-        val salesHistoryList = findViewById<RecyclerView>(R.id.sales_history_list)
-        salesHistoryList.layoutManager = LinearLayoutManager(this)
+        recyclerView = findViewById(R.id.sales_history_list)
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        adapter = SalesHistoryAdapter(salesInvoices)
+        recyclerView.adapter = adapter
+        val sharedPreferences = getSharedPreferences("session_cookie", Context.MODE_PRIVATE)
+        var invoiceType = sharedPreferences.getString("invoice_type", "")
+        if (invoiceType != null) {
+            fetchLastFiveSales(invoiceType)
+        }else{
+            invoiceType="Sales Invoice"
+            fetchLastFiveSales(invoiceType)
+        }
         // Set adapter if needed...
 
         // IMPORTANT: Use BottomNavigationView (not NavigationView)
@@ -100,7 +118,7 @@ class Dashboard : AppCompatActivity() {
         })
 
         val sslContext = SSLContext.getInstance("TLS")
-        sslContext.init(null, trustAllCertificates, java.security.SecureRandom())
+        sslContext.init(null, trustAllCertificates, SecureRandom())
         val sslSocketFactory = sslContext.socketFactory
 
         return OkHttpClient.Builder()
@@ -108,9 +126,111 @@ class Dashboard : AppCompatActivity() {
             .hostnameVerifier { _, _ -> true }
             .build()
     }
+    /**
+     * Fetches the last 5 sales invoices ordered by the last modified date.
+     */
+    @SuppressLint("NotifyDataSetChanged")
+    private fun fetchLastFiveSales(invoiceType:String) {
+        salesInvoices.clear()
+        adapter.notifyDataSetChanged()
+
+        val sharedPreferences = getSharedPreferences("ERPNextPreferences", MODE_PRIVATE)
+        val sessionCookie = sharedPreferences.getString("sessionCookie", null)
+        val erpnextUrl = sharedPreferences.getString("ERPNextUrl", null)
+
+        if (sessionCookie == null || erpnextUrl == null) {
+            Toast.makeText(this, "Session expired. Please log in again.", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        // No filters used here; add filters if needed.
+        val filtersArray = JSONArray()
+
+        // Exclude invoice_id; use "name" as the invoice identifier.
+        val fields = "[\"name\", \"status\", \"docstatus\", \"modified\", \"creation\", \"customer_name\", \"base_grand_total\", \"currency\"]"
+
+        // Encode order_by parameter, replacing '+' with '%20' if needed.
+        val orderByParam = URLEncoder.encode("modified desc", "UTF-8").replace("+", "%20")
+        val extraParams = "&limit_page_length=5&order_by=$orderByParam"
+
+        // Construct URL for the Sales Invoice endpoint.
+        val url = if (filtersArray.length() > 0) {
+            Log.e("Dashboard",invoiceType)
+            if (invoiceType == "sales_invoice") {
+                "https://$erpnextUrl/api/resource/Sales%20Invoice?filters=${URLEncoder.encode(filtersArray.toString(), "UTF-8")}&fields=${URLEncoder.encode(fields, "UTF-8")}" + extraParams
+            }else{
+                "https://$erpnextUrl/api/resource/POS%20Invoice?filters=${URLEncoder.encode(filtersArray.toString(), "UTF-8")}&fields=${URLEncoder.encode(fields, "UTF-8")}" + extraParams
+            }
+
+        } else {
+            if (invoiceType == "sales_invoice") {
+                "https://$erpnextUrl/api/resource/Sales%20Invoice?fields=${URLEncoder.encode(fields, "UTF-8")}" + extraParams
+            }else{
+                "https://$erpnextUrl/api/resource/POS%20Invoice?fields=${URLEncoder.encode(fields, "UTF-8")}" + extraParams
+            }
+
+        }
+
+        Log.d("DashboardActivity", "Fetching from URL: $url")
+        val request = Request.Builder()
+            .url(url)
+            .get()
+            .addHeader("Cookie", sessionCookie)
+            .addHeader("Expect", "")
+            .build()
+
+        createClient().newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                runOnUiThread {
+                    Toast.makeText(this@Dashboard, "Network Error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                }
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                runOnUiThread {
+                    val bodyString = response.body?.string()
+                    Log.d("DashboardActivity", "Response body: $bodyString")
+                    if (!response.isSuccessful) {
+                        Toast.makeText(this@Dashboard, "Error: ${response.code} ${response.message}", Toast.LENGTH_LONG).show()
+                    } else if (bodyString != null) {
+                        try {
+                            val jsonObject = JSONObject(bodyString)
+                            val dataArray = jsonObject.optJSONArray("data")
+                            if (dataArray != null && dataArray.length() > 0) {
+                                for (i in 0 until dataArray.length()) {
+                                    val invoiceObj = dataArray.getJSONObject(i)
+                                    val invoice = SalesInvoice(
+                                        invoiceNumber = invoiceObj.optString("name", "N/A"),
+                                        status = invoiceObj.optString("status", "Unknown"),
+                                        docStatus = invoiceObj.optInt("docstatus", -1),
+                                        customerName = invoiceObj.optString("customer_name", ""),
+                                        totalAmount = invoiceObj.optDouble("base_grand_total", 0.0),
+                                        currency = invoiceObj.optString("currency", ""),
+                                        // Use modified; if not available, fall back to creation date.
+                                        modified = invoiceObj.optString(
+                                            "modified",
+                                            invoiceObj.optString("creation", "")
+                                        ),
+                                        invoiceId = invoiceObj.optString("name", "N/A")
+                                    )
+                                    salesInvoices.add(invoice)
+                                }
+                                adapter.notifyDataSetChanged()
+                            } else {
+                                Toast.makeText(this@Dashboard, "No sales records found.", Toast.LENGTH_SHORT).show()
+                            }
+                        } catch (e: JSONException) {
+                            Toast.makeText(this@Dashboard, "JSON parsing error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                            Log.e("DashboardActivity", "JSON parsing error", e)
+                        }
+                    }
+                }
+            }
+        })
+    }
 
     private fun fetchCurrentCompany() {
-        val sharedPreferences = getSharedPreferences(sharedPreferencesKey, Context.MODE_PRIVATE)
+        val sharedPreferences = getSharedPreferences(sharedPreferencesKey, MODE_PRIVATE)
         val sessionCookie = sharedPreferences.getString(sessionCookieKey, null)
         val erpnextUrl = sharedPreferences.getString("ERPNextUrl", null)
 
@@ -121,7 +241,7 @@ class Dashboard : AppCompatActivity() {
 
         val filters = "[[\"Company\", \"is_group\", \"=\", 0]]"
         val fields = "[\"name\"]"
-        val url = "https://$erpnextUrl/api/resource/Company?filters=${java.net.URLEncoder.encode(filters, "UTF-8")}&fields=${java.net.URLEncoder.encode(fields, "UTF-8")}"
+        val url = "https://$erpnextUrl/api/resource/Company?filters=${URLEncoder.encode(filters, "UTF-8")}&fields=${URLEncoder.encode(fields, "UTF-8")}"
 
         val request = Request.Builder()
             .url(url)
@@ -184,7 +304,7 @@ class Dashboard : AppCompatActivity() {
     }
 
     private fun fetchUserFullName() {
-        val sharedPreferences = getSharedPreferences(sharedPreferencesKey, Context.MODE_PRIVATE)
+        val sharedPreferences = getSharedPreferences(sharedPreferencesKey, MODE_PRIVATE)
         val sessionCookie = sharedPreferences.getString(sessionCookieKey, null)
         val erpnextUrl = sharedPreferences.getString("ERPNextUrl", null)
 
@@ -201,7 +321,7 @@ class Dashboard : AppCompatActivity() {
 
         val filters = "[[\"User\", \"email\", \"=\", \"$username\"]]"
         val fields = "[\"full_name\"]"
-        val url = "https://$erpnextUrl/api/resource/User?filters=${java.net.URLEncoder.encode(filters, "UTF-8")}&fields=${java.net.URLEncoder.encode(fields, "UTF-8")}"
+        val url = "https://$erpnextUrl/api/resource/User?filters=${URLEncoder.encode(filters, "UTF-8")}&fields=${URLEncoder.encode(fields, "UTF-8")}"
 
         val request = Request.Builder()
             .url(url)
@@ -263,7 +383,7 @@ class Dashboard : AppCompatActivity() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun fetchTodaySales() {
-        val sharedPreferences = getSharedPreferences(sharedPreferencesKey, Context.MODE_PRIVATE)
+        val sharedPreferences = getSharedPreferences(sharedPreferencesKey, MODE_PRIVATE)
         val sessionCookie = sharedPreferences.getString(sessionCookieKey, null)
         val erpnextUrl = sharedPreferences.getString("ERPNextUrl", null)
 
@@ -272,14 +392,14 @@ class Dashboard : AppCompatActivity() {
             return
         }
 
-        val today = java.time.LocalDate.now().toString()
+        val today = LocalDate.now().toString()
         val filters = "[[\"docstatus\", \"=\", 1], [\"posting_date\", \"=\", \"$today\"]]"
         val fields = "[\"grand_total\"]"
         val invoiceType = sharedPreferences.getString("invoice_type", "")
         val url = if (invoiceType == "sales_invoice") {
-            "https://$erpnextUrl/api/resource/Sales Invoice?filters=${java.net.URLEncoder.encode(filters, "UTF-8")}&fields=${java.net.URLEncoder.encode(fields, "UTF-8")}"
+            "https://$erpnextUrl/api/resource/Sales Invoice?filters=${URLEncoder.encode(filters, "UTF-8")}&fields=${URLEncoder.encode(fields, "UTF-8")}"
         } else {
-            "https://$erpnextUrl/api/resource/POS Invoice?filters=${java.net.URLEncoder.encode(filters, "UTF-8")}&fields=${java.net.URLEncoder.encode(fields, "UTF-8")}"
+            "https://$erpnextUrl/api/resource/POS Invoice?filters=${URLEncoder.encode(filters, "UTF-8")}&fields=${URLEncoder.encode(fields, "UTF-8")}"
         }
 
         val request = Request.Builder()
@@ -338,7 +458,7 @@ class Dashboard : AppCompatActivity() {
     }
 
     private fun fetchActiveCustomers() {
-        val sharedPreferences = getSharedPreferences(sharedPreferencesKey, Context.MODE_PRIVATE)
+        val sharedPreferences = getSharedPreferences(sharedPreferencesKey, MODE_PRIVATE)
         val sessionCookie = sharedPreferences.getString(sessionCookieKey, null)
         val erpnextUrl = sharedPreferences.getString("ERPNextUrl", null)
 

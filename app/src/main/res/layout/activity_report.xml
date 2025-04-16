@@ -7,45 +7,75 @@
     android:layout_height="match_parent"
     android:padding="16dp">
 
-    <!-- Spinner for selecting a report -->
-    <Spinner
-        android:id="@+id/spinnerReports"
+    <!-- Report Title -->
+    <TextView
+        android:id="@+id/tvReportTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"/>
+        android:text="Invoice Report"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="16dp" />
 
-    <!-- Container for dynamically generated filter fields -->
+    <!-- Date Filters Container -->
     <LinearLayout
-        android:id="@+id/filtersContainer"
+        android:id="@+id/dateFiltersContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:visibility="gone"
-        android:layout_marginBottom="16dp"/>
+        android:orientation="horizontal"
+        android:layout_marginBottom="16dp">
 
-    <!-- Button to apply filters -->
+        <EditText
+            android:id="@+id/etDateFrom"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="Date From"
+            android:focusable="false" />
+
+        <EditText
+            android:id="@+id/etDateTo"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="Date To"
+            android:layout_marginStart="8dp"
+            android:focusable="false" />
+    </LinearLayout>
+
+    <!-- Button to Apply Date Filters -->
     <Button
         android:id="@+id/btnApplyFilters"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Apply Filters"
-        android:visibility="gone"
-        android:layout_marginBottom="16dp"/>
+        android:layout_gravity="center"
+        android:layout_marginBottom="16dp" />
 
-    <!-- RecyclerView to display the report data -->
+    <!-- RecyclerView for textual metrics -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerReport"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"/>
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp" />
 
-    <!-- Progress bar to indicate loading -->
+    <!-- WebView for graphical visualization using Chart.js -->
+    <WebView
+        android:id="@+id/chartWebView"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:layout_marginBottom="16dp" />
+
+    <!-- ProgressBar -->
     <ProgressBar
         android:id="@+id/progressBarReport"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:visibility="gone"/>
+        android:visibility="gone" />
+
+    <!-- Bottom Navigation -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/nav_view"
         android:layout_width="match_parent"
@@ -53,6 +83,6 @@
         app:menu="@menu/bottom_nav_menu"
         app:itemIconTint="@color/bottomNavIcon"
         app:itemTextColor="@color/bottomNavText"
-        android:layout_alignParentBottom="true"
-        android:background="@drawable/bottom_nav_border"/>
+        android:background="@drawable/bottom_nav_border" />
+
 </LinearLayout>

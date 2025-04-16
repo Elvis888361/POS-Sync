@@ -25,10 +25,10 @@ class ReportAdapter : RecyclerView.Adapter<ReportAdapter.ReportViewHolder>() {
     override fun onBindViewHolder(holder: ReportViewHolder, position: Int) {
         val row = reportData[position]
         if (row.isNotEmpty()) {
-            // Display the first entry on the primary text view.
+            // Display the first key-value pair prominently.
             val firstEntry = row.entries.first()
             holder.text1.text = "${firstEntry.key}: ${firstEntry.value}"
-            // Concatenate the rest of the row entries.
+            // Concatenate any remaining key-value pairs.
             val otherEntries = row.entries.drop(1).joinToString(" | ") { "${it.key}: ${it.value}" }
             holder.text2.text = otherEntries
         }

@@ -60,44 +60,138 @@ class SalesListActivity : AppCompatActivity() {
         recyclerView.layoutManager = LinearLayoutManager(this)
         adapter = SalesListAdapter(salesInvoices, object : OnInvoiceClickListeners {
             override fun onInvoiceClicked(invoice: SalesInvoice) {
-                // Handle invoice click based on status.
-                when (invoice.status) {
-                    "Draft" -> {
-                        // Open for editing.
-                        val intent = Intent(this@SalesListActivity, CartActivity::class.java)
-                        intent.putExtra("DRAFT_INVOICE_ID", invoice.invoiceNumber)
-                        startActivity(intent)
+                var docName=invoice.invoiceNumber
+                when (invoice.docStatus) {
+                    0 -> { // Draft – open for editing
+                        when (invoice.status) {
+                            "Draft" -> {
+                                // Open for editing.
+                                val intent = Intent(this@SalesListActivity, CartActivity::class.java).apply {
+                                    putExtra("DRAFT_INVOICE_ID", invoice.invoiceNumber)
+                                }
+                                startActivity(intent)
+                            }
+                            "Paid", "Overdue" -> {
+                                // Show a dialog offering a print layout or return.
+                                AlertDialog.Builder(this@SalesListActivity)
+                                    .setTitle("Select Action")
+                                    .setMessage("What would you like to do with Sales Invoice ${invoice.invoiceNumber}?")
+                                    .setPositiveButton("Print Layout") { dialog, _ ->
+                                        fetchFullInvoice(docName) { invoiceJson, error ->
+                                            runOnUiThread {
+                                                invoiceJson?.let {
+                                                    // Parse the JSON into an ERPNextInvoice object.
+                                                    val erpInvoice = parseInvoice(it)
+                                                    // Start ReceiptActivity and pass the ERPNextInvoice object.
+                                                    val intent = Intent(this@SalesListActivity, ReceiptActivity::class.java).apply {
+                                                        putExtra("INVOICE", erpInvoice)
+                                                    }
+                                                    startActivity(intent)
+                                                    finish()
+                                                } ?: run {
+                                                    Toast.makeText(
+                                                        this@SalesListActivity,
+                                                        "Payment successful but no invoice received: $error",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                    AlertDialog.Builder(this@SalesListActivity)
+                                                        .setTitle("Error")
+                                                        .setMessage("Payment successful but no invoice received: $error")
+                                                        .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
+                                                        .show()
+                                                    finish()
+                                                }
+                                            }
+                                        }
+                                    }
+                                    .setNegativeButton("Return") { dialog, _ ->
+                                        // Navigate to ReturnCartActivity.
+                                        val intent = Intent(this@SalesListActivity, ReturnCartActivity::class.java).apply {
+                                            putExtra("RETURN_INVOICE_ID", invoice.invoiceNumber)
+                                        }
+                                        startActivity(intent)
+                                    }
+                                    .setNeutralButton("Cancel", null)
+                                    .show()
+                            }
+                            else -> {
+                                // Fallback for other statuses in draft mode.
+                                val intent = Intent(this@SalesListActivity, CartActivity::class.java).apply {
+                                    putExtra("DRAFT_INVOICE_ID", invoice.invoiceNumber)
+                                }
+                                startActivity(intent)
+                            }
+                        }
                     }
-                    "Paid", "Overdue" -> {
-                        // Show a dialog offering a print layout or return.
+                    1 -> {
+                        // For status code 1, show the dialog offering actions.
                         AlertDialog.Builder(this@SalesListActivity)
                             .setTitle("Select Action")
                             .setMessage("What would you like to do with Sales Invoice ${invoice.invoiceNumber}?")
                             .setPositiveButton("Print Layout") { dialog, _ ->
-                                // Launch print preview activity or handle print.
-                                Toast.makeText(this@SalesListActivity, "Print Layout not implemented", Toast.LENGTH_SHORT).show()
+
+                                fetchFullInvoice(docName) { invoiceJson, error ->
+                                    runOnUiThread {
+                                        invoiceJson?.let {
+                                            // Parse the JSON into an ERPNextInvoice object.
+                                            val erpInvoice = parseInvoice(it)
+                                            // Start ReceiptActivity and pass the ERPNextInvoice object.
+                                            val intent = Intent(this@SalesListActivity, ReceiptActivity::class.java).apply {
+                                                putExtra("INVOICE", erpInvoice)
+                                            }
+                                            startActivity(intent)
+                                            finish()
+                                        } ?: run {
+                                            Toast.makeText(
+                                                this@SalesListActivity,
+                                                "Payment successful but no invoice received: $error",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                            AlertDialog.Builder(this@SalesListActivity)
+                                                .setTitle("Error")
+                                                .setMessage("Payment successful but no invoice received: $error")
+                                                .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
+                                                .show()
+                                            finish()
+                                        }
+                                    }
+                                }
                             }
                             .setNegativeButton("Return") { dialog, _ ->
-                                // Navigate to ReturnCartActivity.
-                                val intent = Intent(this@SalesListActivity, ReturnCartActivity::class.java)
-                                intent.putExtra("RETURN_INVOICE_ID", invoice.invoiceNumber)
+                                val intent = Intent(this@SalesListActivity, ReturnCartActivity::class.java).apply {
+                                    putExtra("RETURN_INVOICE_ID", invoice.invoiceNumber)
+                                }
                                 startActivity(intent)
                             }
                             .setNeutralButton("Cancel", null)
                             .show()
                     }
+                    2 -> { // Cancelled – simply notify the user.
+                        Toast.makeText(
+                            this@SalesListActivity,
+                            "Invoice ${invoice.invoiceNumber} is Cancelled.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                     else -> {
-                        Toast.makeText(this@SalesListActivity, "Invoice ${invoice.invoiceNumber} selected", Toast.LENGTH_SHORT).show()
+                        // Default action for any other document status.
+                        Toast.makeText(
+                            this@SalesListActivity,
+                            "Invoice ${invoice.invoiceNumber} selected",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 }
+
             }
         })
+
         recyclerView.adapter = adapter
 
         // Set up SearchView to filter as text changes.
         searchView = findViewById(R.id.search_view)
-        val sharedPreferences = getSharedPreferences("ERPNextPreferences", Context.MODE_PRIVATE)
-        val invoiceType = sharedPreferences.getString("invoice_type","sales_invoice")
+        val sharedPreferences = getSharedPreferences("session_cookie", Context.MODE_PRIVATE)
+        val invoiceType = sharedPreferences.getString("invoice_type","")
         if (invoiceType != null) {
             Log.e("SalesListActivity",invoiceType)
         }
@@ -166,7 +260,133 @@ class SalesListActivity : AppCompatActivity() {
             }
         }
     }
+    /**
+     * Parses a JSONObject into an ERPNextInvoice.
+     */
+    private fun parseInvoice(json: JSONObject): ERPNextInvoice {
+        // Parse basic fields
+        val name = json.optString("name")
+        val customer = json.optString("customer")
+        val total = json.optDouble("total", 0.0)
+        val grandTotal = json.optDouble("grand_total", 0.0)
+        val status = json.optString("status")
+        val docStatus = json.optInt("docstatus", 0)
 
+        // Parse invoice items (if available under "items")
+        val items = mutableListOf<InvoiceItem>()
+        val itemsArray = json.optJSONArray("items")
+        if (itemsArray != null) {
+            for (i in 0 until itemsArray.length()) {
+                val itemJson = itemsArray.getJSONObject(i)
+                val itemCode = itemJson.optString("item_code")
+                val qty = itemJson.optDouble("qty", 0.0).toInt()
+                val rate = itemJson.optDouble("rate", 0.0)
+                items.add(InvoiceItem(item_code = itemCode, qty = qty, rate = rate))
+            }
+        }
+
+        // Parse payments (if available under "payments")
+        val payments = mutableListOf<InvoicePayment>()
+        val paymentsArray = json.optJSONArray("payments")
+        if (paymentsArray != null) {
+            for (i in 0 until paymentsArray.length()) {
+                val paymentJson = paymentsArray.getJSONObject(i)
+                val mode = paymentJson.optString("mode_of_payment")
+                val amount = paymentJson.optDouble("amount", 0.0)
+                payments.add(InvoicePayment(mode_of_payment = mode, amount = amount))
+            }
+        }
+
+        return ERPNextInvoice(
+            name = name,
+            customer = customer,
+            total = total,
+            items = items,
+            payments = payments,
+            id = json.optString("id"),
+            amount = total,
+            date = json.optString("posting_date"),
+            grandTotal = grandTotal,
+            currency = json.optString("currency"),
+            company = json.optString("company"),
+            companyaddress = json.optString("company_address"),
+            customername = json.optString("customer_name"),
+            companytaxid = json.optString("tax_id"),
+            invoiceNumber = json.optString("invoice_number"),
+            status = status,
+            docStatus = docStatus,
+            companyaddressdisplay = json.optString("company_address_display"),
+            modified = json.optString("modified")
+        )
+    }
+
+    /**
+     * Fetches the full invoice details using its identifier.
+     *
+     * @param invoiceIdentifier The unique identifier of the invoice.
+     * @param callback A lambda with two parameters: a JSONObject representing the invoice (or null)
+     * and an error message (or null).
+     */
+    private fun fetchFullInvoice(invoiceIdentifier: String, callback: (JSONObject?, String?) -> Unit) {
+        val sharedPreferences = getSharedPreferences("ERPNextPreferences", MODE_PRIVATE)
+        val sessionCookie = sharedPreferences.getString("sessionCookie", null)
+            ?: run {
+                callback(null, "Session expired")
+                return
+            }
+        val erpnextUrl = sharedPreferences.getString("ERPNextUrl", null)
+            ?: run {
+                callback(null, "Domain not configured")
+                return
+            }
+        val prefs = getSharedPreferences("session_cookie", Context.MODE_PRIVATE)
+        val invoiceType = prefs.getString("invoice_type", "")
+        val fetchUrl = if (invoiceType == "sales_invoice") {
+            "https://$erpnextUrl/api/resource/Sales%20Invoice/${URLEncoder.encode(invoiceIdentifier, "UTF-8")}"
+        } else {
+            "https://$erpnextUrl/api/resource/POS%20Invoice/${URLEncoder.encode(invoiceIdentifier, "UTF-8")}"
+        }
+        Log.d("ReturnCartActivity", "Fetch URL: $fetchUrl")
+
+        val request = Request.Builder()
+            .url(fetchUrl)
+            .addHeader("Cookie", sessionCookie)
+            .get()
+            .build()
+
+        createClient().newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                callback(null, "Network error during fetching invoice: ${e.message}")
+                AlertDialog.Builder(this@SalesListActivity)
+                    .setTitle("Network Error")
+                    .setMessage("Network error during fetching invoice: ${e.message}")
+                    .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
+                    .show()
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                val responseBody = response.body?.string()
+                Log.d("ReturnCartActivity", "Fetch response code: ${response.code}, body: $responseBody")
+                if (!response.isSuccessful) {
+                    callback(null, "HTTP ${response.code} during fetching invoice: ${response.message}\n$responseBody")
+                    AlertDialog.Builder(this@SalesListActivity)
+                        .setTitle("Error")
+                        .setMessage("HTTP ${response.code} during fetching invoice: ${response.message}\n" +
+                                "$responseBody")
+                        .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
+                        .show()
+                    return
+                }
+                try {
+                    val json = JSONObject(responseBody)
+                    val data = json.getJSONObject("data")
+                    callback(data, null)
+                } catch (e: Exception) {
+                    callback(null, "Error parsing invoice: ${e.message}")
+                }
+            }
+        })
+    }
     /**
      * Creates an OkHttpClient that forces HTTP/1.1 and adds common headers.
      */
@@ -348,7 +568,8 @@ class SalesListActivity : AppCompatActivity() {
                                             invoiceId = invoiceObj.optString("invoice_id", ""),
                                             customerName = invoiceObj.optString("customer_name", ""),
                                             totalAmount = invoiceObj.optDouble("total_amount", 0.0),
-                                            currency = invoiceObj.optString("currency", "")
+                                            currency = invoiceObj.optString("currency", ""),
+                                            modified = invoiceObj.optString("modified","")
                                         )
                                         salesInvoices.add(invoice)
                                     }

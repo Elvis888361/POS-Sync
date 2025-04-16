@@ -1,25 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="horizontal"
-    android:padding="12dp"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/card_invoice_item"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="?attr/selectableItemBackground">
+    android:layout_margin="8dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="4dp"
+    android:clickable="true"
+    android:foreground="?attr/selectableItemBackground">
 
-    <TextView
-        android:id="@+id/tv_invoice_number"
-        android:layout_width="wrap_content"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/invoice"
-        android:textStyle="bold"
-        android:textSize="16sp" />
+        android:padding="16dp">
 
-    <TextView
-        android:id="@+id/tv_status"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:text="@string/status"
-        android:textSize="14sp" />
-</LinearLayout>
+        <!-- Invoice Number -->
+        <TextView
+            android:id="@+id/tv_invoice_number"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Invoice #12345"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="@color/black"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/iv_arrow"
+            app:layout_constraintHorizontal_bias="0" />
+
+        <!-- Invoice Status -->
+        <TextView
+            android:id="@+id/tv_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Paid"
+            android:textSize="14sp"
+            android:textColor="@color/secondaryText"
+            app:layout_constraintStart_toStartOf="@+id/tv_invoice_number"
+            app:layout_constraintTop_toBottomOf="@+id/tv_invoice_number" />
+
+        <!-- Navigation Arrow Icon -->
+        <ImageView
+            android:id="@+id/iv_arrow"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_arrow_forward"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</com.google.android.material.card.MaterialCardView>

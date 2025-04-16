@@ -32,10 +32,24 @@
     <color name="colorPrimaryDark">#1976D2</color>
     <color name="colorAccent">#FF4081</color>
 
-    <!-- Text Colors -->
+    <color name="dark_background">#1A1A2E</color>
+    <color name="card_background_glass">#26FFFFFF</color>
+    <color name="white_87">#DDFFFFFF</color>
+    <color name="white_38">#61FFFFFF</color>
+    <color name="nav_icon_tint">@color/white_87</color>
+    <color name="ripple_white">#1AFFFFFF</color>>
     <color name="primaryText">#000000</color>
     <color name="secondaryText">#757575</color>
 
+    <color name="secondary">#F6F3FF</color>
+    <color name="progress_bg">#E0D9FF</color>
+    <color name="progress_fg">#6F5AED</color>
+    <color name="text_primary">#100E0E</color>
+    <color name="card_bg">#FFFFFF</color>
+    <color name="personal_project">#FFE3E5</color>
+    <color name="office_project">#DCE5FF</color>
+    <color name="progressbar_color">#6F5AED</color>
+    <color name="progressbar_background">#E5DDFE</color>
     <!-- Stroke Color for Cards -->
     <color name="cardStroke">#E0E0E0</color>
 

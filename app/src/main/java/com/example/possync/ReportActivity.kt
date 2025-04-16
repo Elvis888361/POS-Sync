@@ -1,22 +1,21 @@
 package com.example.possync
 
+import android.app.DatePickerDialog
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.webkit.WebView
 import android.widget.*
-import com.example.possync.ReportAdapter
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import okhttp3.*
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONArray
-import org.json.JSONException
 import org.json.JSONObject
 import java.io.IOException
+import java.net.URLEncoder
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
 import java.text.SimpleDateFormat
@@ -27,65 +26,75 @@ import javax.net.ssl.X509TrustManager
 
 class ReportActivity : AppCompatActivity() {
 
-    private lateinit var spinnerReports: Spinner
-    private lateinit var filtersContainer: LinearLayout
+    private lateinit var tvReportTitle: TextView
+    private lateinit var etDateFrom: EditText
+    private lateinit var etDateTo: EditText
     private lateinit var btnApplyFilters: Button
     private lateinit var recyclerReport: RecyclerView
     private lateinit var progressBarReport: ProgressBar
-
-    // Hardcoded list of reports for demonstration.
-    private val reportList = mutableListOf("Sales Report", "Inventory Report", "Customer Report")
-    // A map to store dynamically generated filter EditTexts.
-    private val customFilters = mutableMapOf<String, EditText>()
     private lateinit var reportAdapter: ReportAdapter
+    private lateinit var chartWebView: WebView
+
+    // Data class representing an invoice.
+    data class Invoice(val invoiceNumber: String, val date: String, val amount: Double, val status: String)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_report)
 
-        spinnerReports = findViewById(R.id.spinnerReports)
-        filtersContainer = findViewById(R.id.filtersContainer)
+        tvReportTitle = findViewById(R.id.tvReportTitle)
+        etDateFrom = findViewById(R.id.etDateFrom)
+        etDateTo = findViewById(R.id.etDateTo)
         btnApplyFilters = findViewById(R.id.btnApplyFilters)
         recyclerReport = findViewById(R.id.recyclerReport)
         progressBarReport = findViewById(R.id.progressBarReport)
+        chartWebView = findViewById(R.id.chartWebView)
 
         recyclerReport.layoutManager = LinearLayoutManager(this)
         reportAdapter = ReportAdapter()
         recyclerReport.adapter = reportAdapter
 
-        spinnerReports.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, reportList)
-            .apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+        // Prepopulate date fields with today's date.
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        etDateFrom.setText(today)
+        etDateTo.setText(today)
 
-        spinnerReports.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(
-                parent: AdapterView<*>, view: View?, position: Int, id: Long
-            ) {
-                val selectedReport = reportList[position]
-                // Dynamically load filters for the selected report.
-                loadReportFilters(selectedReport)
-                // Fetch report data with no filters initially.
-                fetchReportData(selectedReport, emptyMap())
-            }
+        // Setup date pickers.
+        etDateFrom.setOnClickListener { showDatePicker(etDateFrom) }
+        etDateTo.setOnClickListener { showDatePicker(etDateTo) }
 
-            override fun onNothingSelected(parent: AdapterView<*>) {}
+        // Retrieve ERPNext preferences (ERPNext URL, invoice type, session cookie).
+        val spErp = getSharedPreferences("ERPNextPreferences", MODE_PRIVATE)
+        var erpnextUrl = spErp.getString("ERPNextUrl", "your-erpnext-instance.com")
+        // Ensure URL has a proper scheme.
+        if (erpnextUrl != null && !erpnextUrl.startsWith("http://") && !erpnextUrl.startsWith("https://")) {
+            erpnextUrl = "https://$erpnextUrl"
         }
+        val invoiceType = spErp.getString("invoiceType", "sales_invoice") ?: "sales_invoice"
+        tvReportTitle.text = "${invoiceType.capitalize()} Invoice Report"
+
+        // Generate the report with default date filters.
+        generateReportData(invoiceType, mapOf("Date From" to etDateFrom.text.toString(),
+            "Date To" to etDateTo.text.toString()), erpnextUrl)
 
         btnApplyFilters.setOnClickListener {
-            val selectedReport = spinnerReports.selectedItem as String
-            // Collect filter values from the dynamic fields.
-            val filters = customFilters.mapValues { it.value.text.toString() }
-            fetchReportData(selectedReport, filters)
+            progressBarReport.visibility = View.VISIBLE
+            val filters = mapOf(
+                "Date From" to etDateFrom.text.toString(),
+                "Date To" to etDateTo.text.toString()
+            )
+            generateReportData(invoiceType, filters, erpnextUrl)
         }
+
+        // Setup bottom navigation.
         val bottomNavigationView = findViewById<BottomNavigationView>(R.id.nav_view)
         bottomNavigationView.setOnNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.nav_home -> {
-                    // Launch the SalesListActivity when "Orders" is selected
                     startActivity(Intent(this, Dashboard::class.java))
                     true
                 }
                 R.id.nav_orders -> {
-                    // Launch the SalesListActivity when "Orders" is selected
                     startActivity(Intent(this, SalesListActivity::class.java))
                     true
                 }
@@ -93,153 +102,210 @@ class ReportActivity : AppCompatActivity() {
                     startActivity(Intent(this, ChatActivity::class.java))
                     true
                 }
-                R.id.nav_inbox ->{
+                R.id.nav_inbox -> {
                     startActivity(Intent(this, ReportActivity::class.java))
                     true
                 }
-                // Handle other menu items if needed...
                 else -> false
             }
         }
     }
 
-    // Dynamically create filter fields based on the report name.
-    private fun loadReportFilters(reportName: String) {
-        filtersContainer.removeAllViews()
-        customFilters.clear()
-
-        when (reportName) {
-            "Sales Report" -> {
-                addFilterField("Date From")
-                addFilterField("Date To")
-                addFilterField("Customer")
-            }
-            "Inventory Report" -> {
-                addFilterField("Warehouse")
-                addFilterField("Item Code")
-            }
-            "Customer Report" -> {
-                addFilterField("Customer Group")
-                addFilterField("Country")
-            }
-        }
-        val visibility = if (filtersContainer.childCount > 0) View.VISIBLE else View.GONE
-        filtersContainer.visibility = visibility
-        btnApplyFilters.visibility = visibility
+    // Opens a DatePickerDialog and updates the provided EditText with the selected date.
+    private fun showDatePicker(editText: EditText) {
+        val calendar = Calendar.getInstance()
+        val year = calendar.get(Calendar.YEAR)
+        val month = calendar.get(Calendar.MONTH)
+        val day = calendar.get(Calendar.DAY_OF_MONTH)
+        DatePickerDialog(this, { _, selectedYear, selectedMonth, selectedDay ->
+            val formattedDate = String.format("%04d-%02d-%02d", selectedYear, selectedMonth + 1, selectedDay)
+            editText.setText(formattedDate)
+        }, year, month, day).show()
     }
 
-    // Helper to add a filter field (label and EditText) to the filters container.
-    private fun addFilterField(filterName: String) {
-        val layout = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(0, 8, 0, 8)
-        }
-        val label = TextView(this).apply {
-            text = filterName
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-        val editText = EditText(this).apply {
-            hint = "Enter $filterName"
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 2f)
-        }
-        layout.addView(label)
-        layout.addView(editText)
-        filtersContainer.addView(layout)
-        customFilters[filterName] = editText
-    }
-
-    // Calls the ERPNext report API with the report name and any filters.
-    private fun fetchReportData(reportName: String, filters: Map<String, String>) {
+    // Generates the report by fetching ERPNext data and computing summary metrics.
+    private fun generateReportData(invoiceType: String, filters: Map<String, String>, erpnextUrl: String?) {
         progressBarReport.visibility = View.VISIBLE
 
-        val sharedPreferences = getSharedPreferences("ERPNextPreferences", MODE_PRIVATE)
-        val sessionCookie = sharedPreferences.getString("sessionCookie", null)
-        val erpnextUrl = sharedPreferences.getString("ERPNextUrl", null)
-        if (sessionCookie == null || erpnextUrl == null) {
+        fetchInvoicesFromERPNext(invoiceType, filters, erpnextUrl) { invoices, error ->
             runOnUiThread {
+                if (error != null) {
+                    Toast.makeText(this, "Error fetching data: $error", Toast.LENGTH_LONG).show()
+                    progressBarReport.visibility = View.GONE
+                    return@runOnUiThread
+                }
+
+                if (invoices != null) {
+                    // Compute summary metrics.
+                    val totalInvoices = invoices.size
+                    val totalAmount = invoices.sumOf { it.amount }
+                    val statusCounts = invoices.groupingBy { it.status }.eachCount()
+
+                    // Build report rows for the RecyclerView.
+                    val reportRows = mutableListOf<Map<String, Any>>()
+                    reportRows.add(mapOf("Metric" to "Invoice Type", "Value" to invoiceType.capitalize()))
+                    reportRows.add(mapOf("Metric" to "Total Invoices", "Value" to totalInvoices))
+                    reportRows.add(mapOf("Metric" to "Total Amount", "Value" to "$$totalAmount"))
+                    for ((status, count) in statusCounts) {
+                        reportRows.add(mapOf("Metric" to "Invoices $status", "Value" to count))
+                    }
+                    reportAdapter.updateData(reportRows)
+
+                    // Update the WebView chart with the status distribution.
+                    updateWebChart(statusCounts)
+                } else {
+                    Toast.makeText(this, "No data available", Toast.LENGTH_SHORT).show()
+                }
                 progressBarReport.visibility = View.GONE
-                Toast.makeText(this, "Session expired", Toast.LENGTH_SHORT).show()
             }
+        }
+    }
+
+    // Builds an HTML string using Chart.js to render a pie chart, then loads it into the WebView.
+    private fun updateWebChart(statusCounts: Map<String, Int>) {
+        // Build JavaScript arrays for labels and data.
+        val labels = statusCounts.keys.joinToString(separator = "\",\"")
+        val values = statusCounts.values.joinToString(separator = ",")
+        val html = """
+            <html>
+            <head>
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            </head>
+            <body style="margin:0;padding:0;">
+              <canvas id="pieChart" style="width:100%;height:100%;"></canvas>
+              <script>
+                var ctx = document.getElementById('pieChart').getContext('2d');
+                var chart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: ["$labels"],
+                        datasets: [{
+                            data: [$values],
+                            backgroundColor: [
+                                'rgba(255, 99, 132, 0.6)',
+                                'rgba(54, 162, 235, 0.6)',
+                                'rgba(255, 206, 86, 0.6)',
+                                'rgba(75, 192, 192, 0.6)',
+                                'rgba(153, 102, 255, 0.6)',
+                                'rgba(255, 159, 64, 0.6)'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+              </script>
+            </body>
+            </html>
+        """.trimIndent()
+
+        chartWebView.settings.javaScriptEnabled = true
+        chartWebView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
+    }
+
+    // Fetches invoices from ERPNext using its REST API.
+    private fun fetchInvoicesFromERPNext(
+        invoiceType: String,
+        filters: Map<String, String>,
+        erpnextUrl: String?,
+        callback: (List<Invoice>?, String?) -> Unit
+    ) {
+        if (erpnextUrl.isNullOrEmpty()) {
+            callback(null, "ERPNext URL not configured")
             return
         }
 
-        // Example endpoint for running a report; adjust as needed.
-        val url = "https://$erpnextUrl/api/method/frappe.desk.query_report.get_report"
-        val payload = JSONObject().apply {
-            put("report_name", reportName)
-            put("filters", JSONObject(filters))
+        // Retrieve session cookie.
+        val spErp = getSharedPreferences("ERPNextPreferences", MODE_PRIVATE)
+        val sessionCookie = spErp.getString("sessionCookie", null) ?: run {
+            callback(null, "Session expired")
+            return
         }
 
-        val requestBody = payload.toString().toRequestBody("application/json".toMediaTypeOrNull())
+        // Determine endpoint based on invoice type.
+        val encodedEndpoint = if (invoiceType.equals("sales_invoice", ignoreCase = true))
+            "Sales%20Invoice" else "POS%20Invoice"
+
+        // Build the API URL.
+        var url = "$erpnextUrl/api/resource/$encodedEndpoint?fields=[\"name\",\"posting_date\",\"total\",\"status\"]"
+        val dateFrom = filters["Date From"]
+        val dateTo = filters["Date To"]
+        if (!dateFrom.isNullOrEmpty() && !dateTo.isNullOrEmpty()) {
+            val filterJson = "[[\"posting_date\",\">=\",\"$dateFrom\"],[\"posting_date\",\"<=\",\"$dateTo\"]]"
+            url += "&filters=" + URLEncoder.encode(filterJson, "UTF-8")
+        }
+        Log.d("ReportActivity", "Fetch URL: $url")
+
+        val client = createClient()
         val request = Request.Builder()
             .url(url)
-            .post(requestBody)
             .addHeader("Cookie", sessionCookie)
-            .addHeader("Content-Type", "application/json")
+            .get()
             .build()
 
-        getUnsafeOkHttpClient().newCall(request).enqueue(object : Callback {
+        client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                runOnUiThread {
-                    progressBarReport.visibility = View.GONE
-                    Toast.makeText(this@ReportActivity, "Failed to fetch report: ${e.message}", Toast.LENGTH_LONG).show()
-                }
+                callback(null, "Network error: ${e.localizedMessage}")
             }
 
             override fun onResponse(call: Call, response: Response) {
                 val responseBody = response.body?.string()
-                runOnUiThread { progressBarReport.visibility = View.GONE }
                 if (!response.isSuccessful) {
-                    runOnUiThread {
-                        Toast.makeText(this@ReportActivity, "Error: ${response.message}", Toast.LENGTH_LONG).show()
+                    callback(null, "HTTP ${response.code} error: ${response.message}\n$responseBody")
+                    return
+                }
+                try {
+                    val json = JSONObject(responseBody)
+                    val dataArray = json.getJSONArray("data")
+                    val invoiceList = mutableListOf<Invoice>()
+                    for (i in 0 until dataArray.length()) {
+                        val invoiceObject = dataArray.getJSONObject(i)
+                        val name = invoiceObject.getString("name")
+                        val postingDate = invoiceObject.getString("posting_date")
+                        val total = invoiceObject.getDouble("total")
+                        val status = invoiceObject.getString("status")
+                        invoiceList.add(Invoice(name, postingDate, total, status))
                     }
-                } else {
-                    try {
-                        val jsonResponse = JSONObject(responseBody)
-                        val dataArray = jsonResponse.getJSONArray("data")
-                        val reportData = mutableListOf<Map<String, Any>>()
-                        for (i in 0 until dataArray.length()) {
-                            val row = dataArray.getJSONObject(i)
-                            val rowMap = mutableMapOf<String, Any>()
-                            val keys = row.keys()
-                            while (keys.hasNext()) {
-                                val key = keys.next()
-                                rowMap[key] = row.get(key)
-                            }
-                            reportData.add(rowMap)
-                        }
-                        runOnUiThread {
-                            reportAdapter.updateData(reportData)
-                        }
-                    } catch (e: JSONException) {
-                        runOnUiThread {
-                            Toast.makeText(this@ReportActivity, "Failed to parse report data", Toast.LENGTH_LONG).show()
-                        }
-                    }
+                    callback(invoiceList, null)
+                } catch (e: Exception) {
+                    callback(null, "JSON Parsing Error: ${e.localizedMessage}")
                 }
             }
         })
     }
 
-    // Placeholder for getUnsafeOkHttpClient() – replace with your actual OkHttpClient configuration.
-    private fun getUnsafeOkHttpClient(): OkHttpClient {
-        try {
-            val trustAllCerts = arrayOf<TrustManager>(object : X509TrustManager {
-                override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {}
-                override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {}
-                override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
-            })
+    /**
+     * Creates an OkHttpClient that forces HTTP/1.1 and adds common headers.
+     */
+    private fun createClient(): OkHttpClient {
+        val trustAllCertificates = arrayOf<TrustManager>(object : X509TrustManager {
+            override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+            override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+            override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+        })
 
-            val sslContext = SSLContext.getInstance("SSL")
-            sslContext.init(null, trustAllCerts, SecureRandom())
+        val sslContext = SSLContext.getInstance("TLS")
+        sslContext.init(null, trustAllCertificates, SecureRandom())
+        val sslSocketFactory = sslContext.socketFactory
 
-            return OkHttpClient.Builder()
-                .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
-                .hostnameVerifier { _, _ -> true }
+        // Interceptor to remove any "Expect" header and add "Accept" header.
+        val headerInterceptor = Interceptor { chain ->
+            val originalRequest = chain.request()
+            val newRequest = originalRequest.newBuilder()
+                .removeHeader("Expect")
+                .header("Accept", "application/json")
                 .build()
-        } catch (e: Exception) {
-            throw RuntimeException("Failed to create unsafe OkHttpClient", e)
+            chain.proceed(newRequest)
         }
-    }
 
+        return OkHttpClient.Builder()
+            .protocols(listOf(Protocol.HTTP_1_1))
+            .addInterceptor(headerInterceptor)
+            .sslSocketFactory(sslSocketFactory, trustAllCertificates[0] as X509TrustManager)
+            .hostnameVerifier { _, _ -> true }
+            .build()
+    }
 }

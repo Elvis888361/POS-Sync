@@ -8,7 +8,7 @@
     android:background="@color/background"
     tools:context=".Dashboard">
 
-    <!-- Half-Page Header with Gradient -->
+    <!-- Animated Header with Gradient Background -->
     <LinearLayout
         android:id="@+id/header"
         android:layout_width="match_parent"
@@ -16,6 +16,7 @@
         android:orientation="vertical"
         android:background="@drawable/header_gradient"
         android:paddingTop="24dp">
+
         <!-- Company Name Section -->
         <TextView
             android:id="@+id/company_name"
@@ -27,116 +28,151 @@
             android:textStyle="bold"
             android:layout_marginStart="16dp"
             android:layout_marginTop="16dp"/>
-        <!-- Settings Icon -->
+
+        <!-- Animated Settings Icon -->
         <ImageView
             android:id="@+id/settings_icon"
             android:layout_width="32dp"
             android:layout_height="32dp"
-            android:src="@drawable/ic_settings"
+            android:src="@drawable/ic_settings_animated"
             android:layout_alignParentEnd="true"
             android:layout_marginEnd="16dp"
             android:layout_gravity="end"
             app:tint="@color/white" />
 
-        <!-- User Greeting -->
-        <TextView
-            android:id="@+id/user_greeting"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Hello, [Full Name]"
-            android:textColor="@color/white"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="8dp"/>
 
-        <!-- Original Sales Stats Cards -->
+        <!-- Sales Stats Cards -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
+            android:orientation="vertical"
             android:layout_marginTop="16dp"
             android:paddingHorizontal="16dp">
 
-            <!-- Today's Sales Card -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/card_today_sales"
-                android:layout_width="0dp"
-                android:layout_height="120dp"
-                android:layout_weight="1"
-                android:layout_marginEnd="8dp"
-                app:cardBackgroundColor="@color/cardBackground"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="4dp">
+            <!-- Task Progress Card -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/task_progress_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@color/primary"
+                app:cardElevation="6dp"
+                android:padding="16dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical"
-                    android:gravity="center"
-                    android:padding="16dp">
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
 
+                    <!-- User Greeting -->
                     <TextView
-                        android:id="@+id/today_sales_label"
+                        android:id="@+id/user_greeting"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Today's Sales"
-                        android:textColor="@color/textPrimary"
-                        android:textSize="14sp"/>
-
-                    <TextView
-                        android:id="@+id/today_sales"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="$2,450"
-                        android:textColor="@color/textPrimary"
-                        android:textSize="24sp"
+                        android:text="Hello, [Full Name]"
+                        android:textColor="@color/black"
+                        android:textSize="20sp"
                         android:textStyle="bold"
-                        android:layout_marginTop="8dp"/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+                        android:layout_marginBottom="12dp"/>
 
-            <!-- Active Customers Card -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/card_active_customers"
-                android:layout_width="0dp"
-                android:layout_height="120dp"
-                android:layout_weight="1"
-                android:layout_marginStart="8dp"
-                app:cardBackgroundColor="@color/cardBackground"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="4dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical"
-                    android:gravity="center"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:id="@+id/active_customers_label"
-                        android:layout_width="wrap_content"
+                    <!-- Statistics Cards Container -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Active Customers"
-                        android:textColor="@color/textPrimary"
-                        android:textSize="14sp"/>
+                        android:orientation="horizontal"
+                        android:gravity="center"
+                        android:weightSum="2">
 
-                    <TextView
-                        android:id="@+id/active_customers"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="142"
-                        android:textColor="@color/textPrimary"
-                        android:textSize="24sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="8dp"/>
+                        <!-- Active Customers Card -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/card_active_customers"
+                            android:layout_width="0dp"
+                            android:layout_height="120dp"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="8dp"
+                            app:cardBackgroundColor="@color/cardBackground"
+                            app:cardCornerRadius="16dp"
+                            app:cardElevation="4dp"
+                            app:strokeWidth="2dp"
+                            app:strokeColor="@color/white">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:orientation="vertical"
+                                android:gravity="center"
+                                android:padding="16dp">
+
+                                <TextView
+                                    android:id="@+id/active_customers_label"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Active Customers"
+                                    android:textColor="@color/textPrimary"
+                                    android:textSize="14sp"/>
+
+                                <TextView
+                                    android:id="@+id/active_customers"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="0"
+                                    android:textColor="@color/textPrimary"
+                                    android:textSize="24sp"
+                                    android:textStyle="bold"
+                                    android:layout_marginTop="8dp"/>
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <!-- Today's Sales Card -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/card_today_sales"
+                            android:layout_width="0dp"
+                            android:layout_height="120dp"
+                            android:layout_weight="1"
+                            android:layout_marginStart="8dp"
+                            app:cardBackgroundColor="@color/cardBackground"
+                            app:cardCornerRadius="16dp"
+                            app:cardElevation="4dp"
+                            app:strokeWidth="2dp"
+                            app:strokeColor="@color/white">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:orientation="vertical"
+                                android:gravity="center"
+                                android:padding="16dp">
+
+                                <TextView
+                                    android:id="@+id/today_sales_label"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Today's Sales"
+                                    android:textColor="@color/textPrimary"
+                                    android:textSize="14sp"/>
+
+                                <TextView
+                                    android:id="@+id/today_sales"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="$0"
+                                    android:textColor="@color/textPrimary"
+                                    android:textSize="24sp"
+                                    android:textStyle="bold"
+                                    android:layout_marginTop="8dp"/>
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
+
+                    </LinearLayout>
                 </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+
+            </androidx.cardview.widget.CardView>
+
         </LinearLayout>
+
     </LinearLayout>
 
-    <!-- Scrollable Content Below Header -->
+    <!-- Scrollable Content with Fade-in Animation -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -144,10 +180,12 @@
         android:layout_above="@id/nav_view"
         android:padding="16dp">
 
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
+
 
             <!-- New Sales Section -->
             <com.google.android.material.card.MaterialCardView
@@ -171,27 +209,33 @@
                         android:textSize="18sp"
                         android:textStyle="bold"/>
 
-                    <!-- Add your new sales form/buttons here -->
+                    <!-- New Sale Button with Ripple Animation -->
                     <Button
                         android:id="@+id/btn_new_sale"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Create New Sale"
-                        android:layout_marginTop="12dp"/>
+                        android:layout_marginTop="12dp"
+                        android:backgroundTint="@color/secondary"
+                        android:textColor="@color/primary"/>
+
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/new_customer"
                         android:textColor="@color/textPrimary"
                         android:textSize="18sp"
-                        android:textStyle="bold"/>
+                        android:textStyle="bold"
+                        android:layout_marginTop="16dp"/>
 
-                    <!-- Add your new sales form/buttons here -->
+                    <!-- New Customer Button with Ripple Animation -->
                     <Button
                         android:id="@+id/btn_new_customer"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/create_new_customer"
+                        android:backgroundTint="@color/secondary"
+                        android:textColor="@color/primary"
                         android:layout_marginTop="12dp"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -260,7 +304,7 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- Sticky Bottom Navigation -->
+    <!-- Animated Sticky Bottom Navigation -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/nav_view"
         android:layout_width="match_parent"
@@ -269,5 +313,5 @@
         app:itemIconTint="@color/bottomNavIcon"
         app:itemTextColor="@color/bottomNavText"
         android:layout_alignParentBottom="true"
-        android:background="@drawable/bottom_nav_border"/>
+        android:background="@drawable/bottom_nav_glass_background"/>
 </RelativeLayout>

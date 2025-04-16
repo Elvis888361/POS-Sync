@@ -81,7 +81,6 @@ class POS : AppCompatActivity(), ItemAdapter.ItemClickListener {
         itemsRecyclerView.layoutManager = GridLayoutManager(this, 3)
         itemsRecyclerView.adapter = adapter
 
-
         // Initialize SharedPreferences and HTTP Client
         sharedPreferences = getSharedPreferences("ERPNextPreferences", MODE_PRIVATE)
         client = createClient()
@@ -110,7 +109,6 @@ class POS : AppCompatActivity(), ItemAdapter.ItemClickListener {
             startActivity(Intent(this, CartActivity::class.java))
         }
         setupSearchBar()
-
     }
     private fun switchToListView() {
         itemsRecyclerView.layoutManager = listLayoutManager
@@ -226,7 +224,7 @@ class POS : AppCompatActivity(), ItemAdapter.ItemClickListener {
         showLoading(true)
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                // Fetch POS Profile
+                // Fetch POS Profile including warehouse
                 val posProfile = fetchPOSProfile()
                 if (posProfile == null) {
                     withContext(Dispatchers.Main) {
@@ -241,15 +239,17 @@ class POS : AppCompatActivity(), ItemAdapter.ItemClickListener {
                     return@launch
                 }
 
-                // Get price list
+                // Get price list and warehouse from POS Profile
                 val priceList = posProfile.optString("selling_price_list")
-                if (priceList.isNullOrEmpty()) {
+                val warehouse = posProfile.optString("warehouse")
+                if (priceList.isNullOrEmpty() || warehouse.isNullOrEmpty()) {
                     withContext(Dispatchers.Main) {
                         showLoading(false)
-                        Toast.makeText(this@POS, "No Price List found", Toast.LENGTH_LONG).show()
+                        val missingField = if (priceList.isNullOrEmpty()) "Price List" else "Warehouse"
+                        Toast.makeText(this@POS, "No $missingField found", Toast.LENGTH_LONG).show()
                         AlertDialog.Builder(this@POS)
                             .setTitle("Error")
-                            .setMessage("No Price List found")
+                            .setMessage("No $missingField found")
                             .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
                             .show()
                     }
@@ -260,9 +260,9 @@ class POS : AppCompatActivity(), ItemAdapter.ItemClickListener {
                 val items = fetchAllItems()
                 val itemCodes = items.map { it.itemCode }
 
-                // Fetch prices and stock in parallel
+                // Fetch prices and stock in parallel; pass warehouse for stock query
                 val pricesDeferred = async { fetchBatchPrices(itemCodes, priceList) }
-                val stockDeferred = async { fetchBatchStock(itemCodes) }
+                val stockDeferred = async { fetchBatchStock(itemCodes, warehouse) }
                 val prices = pricesDeferred.await()
                 val stock = stockDeferred.await()
 
@@ -305,11 +305,13 @@ class POS : AppCompatActivity(), ItemAdapter.ItemClickListener {
         loadingProgress.visibility = View.GONE
     }
 
+    // Updated fetchPOSProfile including warehouse field
     private suspend fun fetchPOSProfile(): JSONObject? {
         val sessionCookie = sharedPreferences.getString("sessionCookie", null)
         val erpnextUrl = sharedPreferences.getString("ERPNextUrl", null) ?: return null
 
-        val url = "https://$erpnextUrl/api/resource/POS%20Profile?fields=${URLEncoder.encode("[\"name\", \"selling_price_list\"]", "UTF-8")}"
+        // Updated to also get the warehouse field
+        val url = "https://$erpnextUrl/api/resource/POS%20Profile?fields=${URLEncoder.encode("[\"name\", \"selling_price_list\", \"warehouse\"]", "UTF-8")}"
         val request = Request.Builder()
             .url(url)
             .get()
@@ -401,7 +403,8 @@ class POS : AppCompatActivity(), ItemAdapter.ItemClickListener {
             emptyMap()
         }
     }
-    private suspend fun fetchBatchStock(itemCodes: List<String>): Map<String, Double> {
+    // Updated fetchBatchStock to filter by warehouse
+    private suspend fun fetchBatchStock(itemCodes: List<String>, warehouse: String): Map<String, Double> {
         if (itemCodes.isEmpty()) return emptyMap()
 
         val sessionCookie = sharedPreferences.getString("sessionCookie", null)
@@ -409,7 +412,7 @@ class POS : AppCompatActivity(), ItemAdapter.ItemClickListener {
 
         val codesString = itemCodes.joinToString("\",\"", "[\"", "\"]")
         val url = "https://$erpnextUrl/api/resource/Bin?filters=" +
-                URLEncoder.encode("[[\"item_code\", \"in\", $codesString]]", "UTF-8") +
+                URLEncoder.encode("[[\"item_code\", \"in\", $codesString], [\"warehouse\", \"=\", \"$warehouse\"]]", "UTF-8") +
                 "&fields=[\"item_code\",\"actual_qty\"]"
 
         val request = Request.Builder()
@@ -455,11 +458,6 @@ class POS : AppCompatActivity(), ItemAdapter.ItemClickListener {
             updateCartBadge(items.size)
         }
     }
-
-//    private fun updateCartSummary(items: List<CartItem>) {
-//        val total = items.sumOf { it.price * it.quantity }
-//        findViewById<TextView>(R.id.cart_total).text = "Total: $${"%.2f".format(total)}"
-//    }
 
     fun proceedToCheckout(view: View) {
         startActivity(Intent(this, Payment::class.java))

@@ -1,5 +1,6 @@
 package com.example.possync
 
+import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
 import android.os.Handler
@@ -20,17 +21,13 @@ class PaymentRepository(private val context: Context) {
     private val sharedPreferences =
         context.getSharedPreferences("ERPNextPreferences", Context.MODE_PRIVATE)
 
-    // Assume fetchPaymentMethods() is implemented elsewhere.
-
     /**
      * Submits payments for the given invoice.
      *
      * First, this method updates the invoice’s payments.
      * Then, it submits the invoice by updating docstatus to 1.
      * Finally, it performs a GET request to fetch the complete invoice details.
-     *
      */
-
     fun submitPayments(
         invoice: ERPNextInvoice,
         payments: List<InvoicePayment>,
@@ -49,9 +46,21 @@ class PaymentRepository(private val context: Context) {
         // Use invoice.id if available; otherwise, fallback to invoice.name.
         val invoiceIdentifier = invoice.id.ifBlank { invoice.name }
 
+        // Determine invoice type.
+        // First, try to get the stored type, then fallback to checking the identifier prefix.
+        val storedInvoiceType = sharedPreferences.getString("invoice_type", "")
+        val isSalesInvoice = if (storedInvoiceType.isNullOrBlank()) {
+            // Fallback: if the stored type is empty then assume it's a sales invoice if the ID starts with "ACC-SINV"
+            invoiceIdentifier.startsWith("ACC-SINV")
+        } else {
+            storedInvoiceType.equals("sales_invoice", ignoreCase = true) ||
+                    storedInvoiceType.equals("Sales Invoice", ignoreCase = true)
+        }
+
+        Log.d("PaymentRepository", "Invoice identifier: $invoiceIdentifier, stored type: '$storedInvoiceType', isSalesInvoice: $isSalesInvoice")
+
         // --- Step 1: Update the invoice's payments ---
-        val invoiceType = sharedPreferences.getString("invoice_type", "")
-        val updateUrl = if (invoiceType == "sales_invoice") {
+        val updateUrl = if (isSalesInvoice) {
             "https://$domain/api/resource/Sales%20Invoice/$invoiceIdentifier"
         } else {
             "https://$domain/api/resource/POS%20Invoice/$invoiceIdentifier"
@@ -89,20 +98,18 @@ class PaymentRepository(private val context: Context) {
         getUnsafeClient().newCall(updateRequest).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 Log.e("PaymentRepository", "Network error during update: ${e.message}")
-
-                // Show error alert popup on the main thread
                 Handler(Looper.getMainLooper()).post {
-                    AlertDialog.Builder(context)
-                        .setTitle("Network Error")
-                        .setMessage(
-                            "There was a problem connecting to the server. " +
-                                    "Please check your internet connection and try again.\n\nError: ${e.message}"
-                        )
-                        .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
-                        .show()
+                    if (context is Activity && !context.isFinishing) {
+                        AlertDialog.Builder(context)
+                            .setTitle("Network Error")
+                            .setMessage(
+                                "There was a problem connecting to the server. " +
+                                        "Please check your internet connection and try again.\n\nError: ${e.message}"
+                            )
+                            .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
+                            .show()
+                    }
                 }
-
-                // Inform any listeners about the error
                 callback(null, "Network error during update: ${e.message}")
             }
 
@@ -111,25 +118,23 @@ class PaymentRepository(private val context: Context) {
                 Log.d("PaymentRepository", "Update response code: ${response.code}, body: $updateBody")
 
                 if (!response.isSuccessful) {
-                    // Show error alert popup on the main thread
-                    Handler(Looper.getMainLooper()).post {
-                        AlertDialog.Builder(context)
-                            .setTitle("Update Failed")
-                            .setMessage(
-                                "Update request failed with HTTP ${response.code}.\n" +
-                                        "Message: ${response.message}\nDetails: ${updateBody ?: "No details available"}"
-                            )
-                            .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
-                            .show()
+                    if (context is Activity && !context.isFinishing) {
+                        Handler(Looper.getMainLooper()).post {
+                            AlertDialog.Builder(context)
+                                .setTitle("Update Failed")
+                                .setMessage(
+                                    "Update request failed with HTTP ${response.code}.\n" +
+                                            "Message: ${response.message}\nDetails: ${updateBody ?: "No details available"}"
+                                )
+                                .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
+                                .show()
+                        }
                     }
-
                     callback(null, "HTTP ${response.code} during update: ${response.message}\n$updateBody")
                     return
                 }
                 // --- Proceed to Step 2: Submit the invoice ---
-                if (invoiceType != null) {
-                    submitInvoice(invoiceIdentifier, callback,invoiceType)
-                }
+                submitInvoice(invoiceIdentifier, callback, isSalesInvoice)
             }
         })
     }
@@ -141,7 +146,7 @@ class PaymentRepository(private val context: Context) {
     private fun submitInvoice(
         invoiceIdentifier: String,
         callback: (ERPNextInvoice?, String?) -> Unit,
-        invoiceType: String
+        isSalesInvoice: Boolean
     ) {
         val sessionCookie = sharedPreferences.getString("sessionCookie", null)
             ?: run {
@@ -153,7 +158,7 @@ class PaymentRepository(private val context: Context) {
                 callback(null, "Domain not configured")
                 return
             }
-        val submitUrl = if (invoiceType == "sales_invoice") {
+        val submitUrl = if (isSalesInvoice) {
             "https://$domain/api/resource/Sales%20Invoice/$invoiceIdentifier"
         } else {
             "https://$domain/api/resource/POS%20Invoice/$invoiceIdentifier"
@@ -195,7 +200,7 @@ class PaymentRepository(private val context: Context) {
                     return
                 }
                 // --- Proceed to Step 3: Fetch the complete invoice details ---
-                fetchFullInvoice(invoiceIdentifier, callback,invoiceType)
+                fetchFullInvoice(invoiceIdentifier, callback, isSalesInvoice)
             }
         })
     }
@@ -206,7 +211,7 @@ class PaymentRepository(private val context: Context) {
     private fun fetchFullInvoice(
         invoiceIdentifier: String,
         callback: (ERPNextInvoice?, String?) -> Unit,
-        invoiceType: String
+        isSalesInvoice: Boolean
     ) {
         val sessionCookie = sharedPreferences.getString("sessionCookie", null)
             ?: run {
@@ -218,7 +223,7 @@ class PaymentRepository(private val context: Context) {
                 callback(null, "Domain not configured")
                 return
             }
-        val getUrl = if (invoiceType == "sales_invoice") {
+        val getUrl = if (isSalesInvoice) {
             "https://$domain/api/resource/Sales%20Invoice/$invoiceIdentifier"
         } else {
             "https://$domain/api/resource/POS%20Invoice/$invoiceIdentifier"
@@ -255,9 +260,8 @@ class PaymentRepository(private val context: Context) {
                         grandTotal = data.getDouble("grand_total"),
                         currency = data.getString("currency"),
                         id = data.getString("name"),
-                        payments = parsePayments(data),  // You can parse payments if needed
-                        items = parseItems(data),        // Parse items list from the response
-                        // The following fields may or may not be in the response.
+                        payments = parsePayments(data),
+                        items = parseItems(data),
                         company = data.optString("company", ""),
                         companyaddress = data.optString("company_address", ""),
                         customername = data.optString("customer_name", ""),
@@ -268,6 +272,7 @@ class PaymentRepository(private val context: Context) {
                         invoiceNumber = data.getString("name"),
                         status = data.optString("status", ""),
                         docStatus = data.optInt("docstatus", 0),
+                        modified = data.optString("modified", "")
                     )
                     callback(fullInvoice, null)
                 } catch (e: Exception) {
@@ -280,7 +285,6 @@ class PaymentRepository(private val context: Context) {
 
     /**
      * Parses the payments array from the invoice JSON.
-     * Adjust this function if your ERPNext response structure differs.
      */
     private fun parsePayments(data: JSONObject): List<InvoicePayment> {
         val paymentsList = mutableListOf<InvoicePayment>()
@@ -301,7 +305,6 @@ class PaymentRepository(private val context: Context) {
 
     /**
      * Parses the items array from the invoice JSON.
-     * Adjust this function if your ERPNext response structure differs.
      */
     private fun parseItems(data: JSONObject): List<InvoiceItem> {
         val itemsList = mutableListOf<InvoiceItem>()

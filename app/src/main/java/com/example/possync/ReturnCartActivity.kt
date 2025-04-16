@@ -20,7 +20,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.observe
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import okhttp3.*
@@ -157,6 +156,7 @@ class ReturnCartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
                     val json = JSONObject(responseBody)
                     // Save the entire invoice JSON.
                     val data = json.getJSONObject("data")
+                    Log.e("ReturnCartActivity", data.toString())
                     originalInvoiceData = data
 
                     // For UI: update customer spinner.
@@ -222,8 +222,6 @@ class ReturnCartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
      *
      * After saving the return invoice, it is automatically submitted.
      */
-// In your ReturnCartActivity
-
     private fun completeReturn() {
         if (originalInvoiceData == null) {
             Toast.makeText(this, "Original invoice data not loaded", Toast.LENGTH_SHORT).show()
@@ -323,6 +321,45 @@ class ReturnCartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
             }
         }
 
+        // --- Merge tax details from the original invoice ---
+        // Ensure that the 'included_in_print_rate' field is set correctly.
+        // If the original tax record does not have it (or is not loaded), force a default value (e.g., 1).
+        // Process Taxes: assign the included_in_print_rate checkbox from original invoice.
+        // Do NOT remove taxes from returnInvoiceData before the if condition.
+// returnInvoiceData.remove("taxes")
+
+        if (originalInvoiceData?.has("taxes") == true) {
+            val origTaxes = originalInvoiceData!!.getJSONArray("taxes")
+            if (origTaxes.length() == 0) {
+                // Original invoice has an empty taxes array; remove taxes from returnInvoiceData.
+                returnInvoiceData.remove("taxes")
+            } else if (returnInvoiceData.has("taxes")) {
+                // Merge the checkbox value for each tax in the return invoice.
+                val returnTaxes = returnInvoiceData.getJSONArray("taxes")
+                for (i in 0 until returnTaxes.length()) {
+                    val taxRow = returnTaxes.getJSONObject(i)
+                    var includedInPrintRate = false
+                    // Look for a matching tax row in the original invoice.
+                    for (j in 0 until origTaxes.length()) {
+                        val origTax = origTaxes.getJSONObject(j)
+                        if (taxRow.optString("account_head") == origTax.optString("account_head")) {
+                            includedInPrintRate = origTax.optBoolean("included_in_print_rate", false)
+                            break
+                        }
+                    }
+                    taxRow.put("included_in_print_rate", includedInPrintRate)
+                }
+            }
+        } else {
+            // If the original invoice doesn't have a "taxes" field, remove taxes from returnInvoiceData.
+            returnInvoiceData.remove("taxes")
+        }
+
+
+
+
+        // --- End of tax merging ---
+
         Log.d("ReturnCartActivity", "Return Payload: ${returnInvoiceData}")
 
         // Get session and ERPNext details.
@@ -339,8 +376,12 @@ class ReturnCartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
         val invoiceType = prefs.getString("invoice_type", "")
 
         // Post the return invoice.
-        postReturnInvoice(returnInvoiceData, sessionCookie, erpnextUrl, invoiceType)
+        postReturnInvoice(returnInvoiceData, sessionCookie, erpnextUrl, invoiceType,
+            originalInvoiceData!!
+        )
     }
+
+
 
     // -------------------------------------------------------------------------------------
 // Posts the return invoice payload to ERPNext.
@@ -348,8 +389,29 @@ class ReturnCartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
         returnInvoiceData: JSONObject,
         sessionCookie: String,
         erpnextUrl: String,
-        invoiceType: String?
+        invoiceType: String?,
+
+        originalInvoiceData: JSONObject // Pass the original invoice data here
     ) {
+        // Merge tax details: copy included_in_print_rate from the original invoice
+        if (originalInvoiceData.has("taxes") && returnInvoiceData.has("taxes")) {
+            val originalTaxes = originalInvoiceData.getJSONArray("taxes")
+            val returnTaxes = returnInvoiceData.getJSONArray("taxes")
+            for (i in 0 until returnTaxes.length()) {
+                val returnTax = returnTaxes.getJSONObject(i)
+                // Option: match taxes by a unique key (for example, "account_head" or "description")
+                for (j in 0 until originalTaxes.length()) {
+                    val origTax = originalTaxes.getJSONObject(j)
+                    if (returnTax.optString("account_head") == origTax.optString("account_head")) {
+                        // Copy the included_in_print_rate field from original tax entry
+                        returnTax.put("included_in_print_rate", origTax.opt("included_in_print_rate"))
+                        break
+                    }
+                }
+            }
+        }
+
+        // Now continue with building the URL based on invoice type
         val url = if (invoiceType == "sales_invoice") {
             "https://$erpnextUrl/api/resource/Sales%20Invoice"
         } else {
@@ -381,7 +443,7 @@ class ReturnCartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
                 if (!response.isSuccessful) {
                     // Check for mandatory errors.
                     if (responseBody != null && responseBody.contains("MandatoryError")) {
-                        handleReturnMandatoryError(responseBody, returnInvoiceData, invoiceType ?: "", sessionCookie, erpnextUrl)
+                        handleReturnMandatoryError(responseBody, returnInvoiceData, invoiceType ?: "", sessionCookie, erpnextUrl,originalInvoiceData)
                     } else {
                         runOnUiThread {
                             Toast.makeText(this@ReturnCartActivity, "Error: ${response.message}", Toast.LENGTH_LONG).show()
@@ -415,6 +477,7 @@ class ReturnCartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
         })
     }
 
+
     // -------------------------------------------------------------------------------------
 // Handles mandatory field errors for the return invoice.
     private fun handleReturnMandatoryError(
@@ -422,7 +485,8 @@ class ReturnCartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
         returnInvoiceData: JSONObject,
         invoiceType: String,
         sessionCookie: String,
-        erpnextUrl: String
+        erpnextUrl: String,
+        originalInvoiceData: JSONObject
     ) {
         try {
             val errorJson = JSONObject(responseBody)
@@ -465,7 +529,7 @@ class ReturnCartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
                 Log.d("ReturnError", "Missing fields: $missingFields")
                 runOnUiThread {
                     fetchMissingFieldMetasForReturn(missingFields, sessionCookie, erpnextUrl, invoiceType) { metaMap ->
-                        showMandatoryFieldsDialogForReturn(metaMap, returnInvoiceData, invoiceType, sessionCookie, erpnextUrl)
+                        showMandatoryFieldsDialogForReturn(metaMap, returnInvoiceData, invoiceType, sessionCookie, erpnextUrl,originalInvoiceData)
                     }
                 }
             } else {
@@ -567,7 +631,8 @@ class ReturnCartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
         returnInvoiceData: JSONObject,
         invoiceType: String,
         sessionCookie: String,
-        erpnextUrl: String
+        erpnextUrl: String,
+        originalInvoiceData: JSONObject
     ) {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Additional Information Required")
@@ -655,7 +720,7 @@ class ReturnCartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
                 }
             }
             Log.d("ReturnInvoiceUpdate", "Updated return invoice payload: $returnInvoiceData")
-            postReturnInvoice(returnInvoiceData, sessionCookie, erpnextUrl, invoiceType)
+            postReturnInvoice(returnInvoiceData, sessionCookie, erpnextUrl, invoiceType,originalInvoiceData)
         }
         builder.setNegativeButton("Cancel") { dialog, which -> dialog.dismiss() }
         builder.show()
@@ -983,7 +1048,8 @@ class ReturnCartActivity : AppCompatActivity(), CartAdapter.CartItemListener {
             invoiceNumber = json.optString("invoice_number"),
             status = status,
             docStatus = docStatus,
-            companyaddressdisplay = json.optString("company_address_display")
+            companyaddressdisplay = json.optString("company_address_display"),
+            modified = json.optString("modified")
         )
     }
 

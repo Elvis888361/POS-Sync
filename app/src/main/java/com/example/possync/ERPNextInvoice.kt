@@ -20,6 +20,7 @@ data class ERPNextInvoice(
     val invoiceNumber: String,
     val status: String,
     val docStatus: Int,
+    val modified:String,
     val companyaddressdisplay: String = ""
 ) : Serializable {
 
@@ -33,6 +34,7 @@ data class ERPNextInvoice(
             status = this.status,
             docStatus = this.docStatus,
             currency = this.currency,
+            modified = TODO(),
             // Add other fields if needed
         )
     }

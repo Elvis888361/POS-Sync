@@ -1,222 +1,83 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F5F7FA"
     android:padding="16dp">
+
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/receipt_root"
         android:orientation="vertical">
+
         <LinearLayout
-            android:layout_width="match_parent"
+
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Header Section with Gradient Background -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
+            <!-- Main Content Section -->
+            <LinearLayout
+                android:id="@+id/receipt_root"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="4dp"
-                android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="@color/colorPrimary">
+                android:orientation="vertical">
 
-                <LinearLayout
+                <!-- Header Section with Gradient Background -->
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="24dp">
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="4dp"
+                    android:layout_marginBottom="16dp"
+                    app:cardBackgroundColor="@color/colorPrimary">
 
-    <!--                <ImageView-->
-    <!--                    android:layout_width="80dp"-->
-    <!--                    android:layout_height="80dp"-->
-    <!--                    android:src="@drawable/ic_store"-->
-    <!--                    android:tint="#FFFFFF"-->
-    <!--                    android:layout_gravity="center"/>-->
-
-                    <TextView
-                        android:id="@+id/company_name"
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Company Name"
-                        android:textColor="#FFFFFF"
-                        android:textSize="24sp"
-                        android:textStyle="bold"
-                        android:gravity="center"
-                        android:layout_marginTop="8dp"/>
+                        android:orientation="vertical"
+                        android:padding="24dp">
 
-                    <TextView
-                        android:id="@+id/company_address"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Company Address"
-                        android:textColor="#E3E3E3"
-                        android:textSize="14sp"
-                        android:gravity="center"
-                        android:layout_marginTop="4dp"/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+                        <TextView
+                            android:id="@+id/company_name"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Company Name"
+                            android:textColor="#FFFFFF"
+                            android:textSize="24sp"
+                            android:textStyle="bold"
+                            android:gravity="center"
+                            android:layout_marginTop="8dp" />
 
-            <!-- Invoice Details Card -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp"
-                android:layout_marginBottom="16dp">
+                        <TextView
+                            android:id="@+id/company_address"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Company Address"
+                            android:textColor="#E3E3E3"
+                            android:textSize="14sp"
+                            android:gravity="center"
+                            android:layout_marginTop="4dp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
-                <LinearLayout
+                <!-- Invoice Details Card -->
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="2dp"
+                    android:layout_marginBottom="16dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:layout_marginBottom="8dp">
+                        android:orientation="vertical"
+                        android:padding="16dp">
 
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Invoice Number:"
-                            android:textColor="#666666"
-                            android:textSize="14sp"/>
-
-                        <TextView
-                            android:id="@+id/invoice_number"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="#123456"
-                            android:textColor="#333333"
-                            android:textSize="14sp"
-                            android:textStyle="bold"/>
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:layout_marginBottom="8dp">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Date:"
-                            android:textColor="#666666"
-                            android:textSize="14sp"/>
-
-                        <TextView
-                            android:id="@+id/invoice_date"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="01 Jan 2024"
-                            android:textColor="#333333"
-                            android:textSize="14sp"/>
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Customer:"
-                            android:textColor="#666666"
-                            android:textSize="14sp"/>
-
-                        <TextView
-                            android:id="@+id/customer_name"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="John Doe"
-                            android:textColor="#333333"
-                            android:textSize="14sp"
-                            android:textStyle="bold"/>
-                    </LinearLayout>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="#EEEEEE"
-                        android:layout_marginVertical="16dp"/>
-
-                    <!-- Items Header -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:layout_marginBottom="8dp">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="3"
-                            android:text="Item"
-                            android:textColor="#666666"
-                            android:textSize="12sp"
-                            android:textStyle="bold"/>
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Qty"
-                            android:textColor="#666666"
-                            android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:gravity="end"/>
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1.5"
-                            android:text="Price"
-                            android:textColor="#666666"
-                            android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:gravity="end"/>
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1.5"
-                            android:text="Total"
-                            android:textColor="#666666"
-                            android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:gravity="end"/>
-                    </LinearLayout>
-
-                    <!-- Items RecyclerView -->
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/items_recycler_view"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"/>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="#EEEEEE"
-                        android:layout_marginVertical="16dp"/>
-
-                    <!-- Summary Section -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical">
-
+                        <!-- Invoice Number Row -->
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -227,19 +88,21 @@
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
-                                android:text="Subtotal:"
+                                android:text="Invoice Number:"
                                 android:textColor="#666666"
-                                android:textSize="14sp"/>
+                                android:textSize="14sp" />
 
                             <TextView
-                                android:id="@+id/footer_total"
+                                android:id="@+id/invoice_number"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="$100.00"
+                                android:text="#123456"
                                 android:textColor="#333333"
-                                android:textSize="14sp"/>
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
                         </LinearLayout>
 
+                        <!-- Invoice Date Row -->
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -250,73 +113,295 @@
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
-                                android:text="Tax:"
+                                android:text="Date:"
                                 android:textColor="#666666"
-                                android:textSize="14sp"/>
+                                android:textSize="14sp" />
 
                             <TextView
-                                android:id="@+id/footer_tax"
+                                android:id="@+id/invoice_date"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="$10.00"
+                                android:text="01 Jan 2024"
                                 android:textColor="#333333"
-                                android:textSize="14sp"/>
+                                android:textSize="14sp" />
                         </LinearLayout>
 
+                        <!-- Customer Row -->
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:layout_marginBottom="16dp">
+                            android:orientation="horizontal">
 
                             <TextView
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
-                                android:text="Grand Total:"
-                                android:textColor="#333333"
-                                android:textSize="16sp"
-                                android:textStyle="bold"/>
+                                android:text="Customer:"
+                                android:textColor="#666666"
+                                android:textSize="14sp" />
 
                             <TextView
-                                android:id="@+id/footer_grand_total"
+                                android:id="@+id/customer_name"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="$110.00"
-                                android:textColor="@color/colorPrimary"
-                                android:textSize="16sp"
-                                android:textStyle="bold"/>
+                                android:text="John Doe"
+                                android:textColor="#333333"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <!-- Divider -->
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="#EEEEEE"
+                            android:layout_marginVertical="16dp" />
+
+                        <!-- Items Header -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:layout_marginBottom="8dp">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="3"
+                                android:text="Item"
+                                android:textColor="#666666"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Qty"
+                                android:textColor="#666666"
+                                android:textSize="12sp"
+                                android:textStyle="bold"
+                                android:gravity="end" />
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1.5"
+                                android:text="Price"
+                                android:textColor="#666666"
+                                android:textSize="12sp"
+                                android:textStyle="bold"
+                                android:gravity="end" />
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1.5"
+                                android:text="Total"
+                                android:textColor="#666666"
+                                android:textSize="12sp"
+                                android:textStyle="bold"
+                                android:gravity="end" />
+                        </LinearLayout>
+
+                        <!-- Items RecyclerView -->
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/items_recycler_view"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content" />
+
+                        <!-- Divider -->
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="#EEEEEE"
+                            android:layout_marginVertical="16dp" />
+
+                        <!-- Summary Section -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+
+                            <!-- Subtotal Row -->
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:layout_marginBottom="8dp">
+
+                                <TextView
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="Subtotal:"
+                                    android:textColor="#666666"
+                                    android:textSize="14sp" />
+
+                                <TextView
+                                    android:id="@+id/footer_total"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="$100.00"
+                                    android:textColor="#333333"
+                                    android:textSize="14sp" />
+                            </LinearLayout>
+
+                            <!-- Tax Row -->
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:layout_marginBottom="8dp">
+
+                                <TextView
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="Tax:"
+                                    android:textColor="#666666"
+                                    android:textSize="14sp" />
+
+                                <TextView
+                                    android:id="@+id/footer_tax"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="$10.00"
+                                    android:textColor="#333333"
+                                    android:textSize="14sp" />
+                            </LinearLayout>
+
+                            <!-- Grand Total Row -->
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:layout_marginBottom="16dp">
+
+                                <TextView
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="Grand Total:"
+                                    android:textColor="#333333"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:id="@+id/footer_grand_total"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="$110.00"
+                                    android:textColor="@color/colorPrimary"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
                         </LinearLayout>
                     </LinearLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+                </com.google.android.material.card.MaterialCardView>
 
-            <!-- Thank You Message -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Thank you for your business! 😊"
-                android:textColor="#666666"
-                android:textSize="14sp"
-                android:gravity="center"
-                android:layout_marginBottom="16dp"/>
+                <!-- Thank You Message -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Thank you for your business! 😊"
+                    android:textColor="#666666"
+                    android:textSize="14sp"
+                    android:gravity="center"
+                    android:layout_marginBottom="16dp" />
 
-            <!-- Print Button -->
+                <!-- Print Button placeholder -->
+            </LinearLayout>
 
+            <!-- Buttons Section -->
 
         </LinearLayout>
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/print_receipt"
+        <GridLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Print Receipt"
-            app:iconGravity="start"
-            app:cornerRadius="8dp"
-            android:layout_marginBottom="8dp"
-            app:backgroundTint="@color/colorPrimary"
-            android:textColor="#FFFFFF"
-            android:textSize="16sp"
-            app:strokeColor="@color/colorPrimaryDark"
-            app:strokeWidth="1dp"/>
+            android:columnCount="2"
+            android:rowCount="2"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/download"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:layout_margin="4dp"
+                android:text="Download Receipt"
+                app:iconGravity="start"
+                app:cornerRadius="8dp"
+                android:layout_marginBottom="8dp"
+                app:backgroundTint="@color/colorPrimary"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                app:strokeColor="@color/colorPrimaryDark"
+                app:strokeWidth="1dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/print_receipt"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:layout_margin="4dp"
+                android:text="Print Receipt"
+                app:iconGravity="start"
+                app:cornerRadius="8dp"
+                android:layout_marginBottom="8dp"
+                app:backgroundTint="@color/colorPrimary"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                app:strokeColor="@color/colorPrimaryDark"
+                app:strokeWidth="1dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/print_receipt2"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:layout_margin="4dp"
+                android:text="Print Receipt From Bluetooth"
+                app:iconGravity="start"
+                app:cornerRadius="8dp"
+                android:layout_marginBottom="8dp"
+                app:backgroundTint="@color/colorPrimary"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                app:strokeColor="@color/colorPrimaryDark"
+                app:strokeWidth="1dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/send_to_whatsapp"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:layout_margin="4dp"
+                android:text="Send Receipt Via Whatsapp"
+                app:iconGravity="start"
+                app:cornerRadius="8dp"
+                android:layout_marginBottom="8dp"
+                app:backgroundTint="@color/colorPrimary"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                app:strokeColor="@color/colorPrimaryDark"
+                app:strokeWidth="1dp" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/back"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:layout_margin="4dp"
+                android:text="Back"
+                app:iconGravity="start"
+                app:cornerRadius="8dp"
+                android:layout_marginBottom="8dp"
+                app:backgroundTint="@color/colorPrimary"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                app:strokeColor="@color/colorPrimaryDark"
+                app:strokeWidth="1dp" />
+        </GridLayout>
+
     </LinearLayout>
-</ScrollView>
+</LinearLayout>

@@ -6,9 +6,10 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-class SalesHistoryAdapter(private val sales: List<Sale>) : RecyclerView.Adapter<SalesHistoryAdapter.ViewHolder>() {
+class SalesHistoryAdapter(private val salesList: List<SalesInvoice>) :
+    RecyclerView.Adapter<SalesHistoryAdapter.ViewHolder>() {
 
-    inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val saleId: TextView = itemView.findViewById(R.id.sale_id)
         val saleDate: TextView = itemView.findViewById(R.id.sale_date)
         val saleAmount: TextView = itemView.findViewById(R.id.sale_amount)
@@ -16,26 +17,19 @@ class SalesHistoryAdapter(private val sales: List<Sale>) : RecyclerView.Adapter<
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_sale_history, parent, false)
+        val view = LayoutInflater.from(parent.context)
+            .inflate(R.layout.item_sale_history, parent, false)
         return ViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val sale = sales[position]
-        holder.saleId.text = "Sale #${sale.id}"
-        holder.saleDate.text = sale.date
-        holder.saleAmount.text = sale.amount
+        val sale = salesList[position]
+        holder.saleId.text = "Sale #${sale.invoiceNumber}"
+        // You can format the modified date as needed.
+        holder.saleDate.text = sale.modified ?: "Unknown date"
+        holder.saleAmount.text = "${sale.currency}${sale.totalAmount}"
         holder.customerName.text = "Customer: ${sale.customerName}"
     }
 
-    override fun getItemCount(): Int {
-        return sales.size
-    }
-
-    data class Sale(
-        val id: String,
-        val date: String,
-        val amount: String,
-        val customerName: String
-    )
+    override fun getItemCount(): Int = salesList.size
 }
