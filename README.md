@@ -35,7 +35,7 @@
   - ➕ **To enable**, add your API key in the `ChatAdapter.kt` file:
     ```kotlin
     // Replace YOUR_API_KEY with your actual key
-    val apiKey = "YOUR_API_KEY"
+    private val openAiApiKey = "Add your Api Key here"
     ```
 
 ---
