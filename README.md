@@ -86,4 +86,4 @@ The codebase is structured with simplicity in mind — files are not heavily nes
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/pos-sync.git
+   git clone [https://github.com/your-username/pos-sync.git](https://github.com/Elvis888361/POS-Sync)
