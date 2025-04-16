@@ -30,7 +30,7 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var chatAdapter: ChatAdapter
 
     // Replace with your OpenAI API key (for demo purposes only)
-    private val openAiApiKey = "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"
+    private val openAiApiKey = ""
 
     companion object {
         private const val TAG = "ChatActivity"
