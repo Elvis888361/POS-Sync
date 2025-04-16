@@ -11,7 +11,7 @@
   - Site info is securely stored locally until manually cleared.
 
 - 🧾 **POS Functionality**
-  - Create **Sales Invoices** (default) or **Sales Orders** — easily switch in **Settings**.
+  - Create **Sales Invoices** (default) or **POS Invoice** — easily switch in **Settings**.
   - Load and continue from **previous transactions** or any saved **Draft** documents.
   - Perform **Returns** directly from the app.
 
